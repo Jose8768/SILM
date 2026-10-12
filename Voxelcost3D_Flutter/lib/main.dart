@@ -16,6 +16,7 @@ class VoxelcostApp extends StatefulWidget {
 
 class _VoxelcostAppState extends State<VoxelcostApp> {
   bool _authenticated = false;
+  bool _isDarkMode = false;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +25,14 @@ class _VoxelcostAppState extends State<VoxelcostApp> {
       title: 'Voxelcost3D',
       theme: voxelTheme(),
       home: _authenticated
-          ? HomeScreen(onLogout: () => setState(() => _authenticated = false))
+          ? HomeScreen(
+              isDarkMode: _isDarkMode,
+              onThemeModeChanged: (isDarkMode) {
+                setState(() => _isDarkMode = isDarkMode);
+                setVoxelDarkMode(isDarkMode);
+              },
+              onLogout: () => setState(() => _authenticated = false),
+            )
           : LoginScreen(
               onLoginSuccess: () => setState(() => _authenticated = true)),
     );

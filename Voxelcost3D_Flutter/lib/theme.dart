@@ -1,15 +1,26 @@
 import 'package:flutter/material.dart';
 
-// --- PALETA APPLE (LIGHT THEME) ---
-// Neutrales
-const bgBase = Color(0xFFF5F5F7); // Parchment
-const surfaceCard = Color(0xFFFFFFFF); // Canvas
-const surfaceElevated = Color(0xFFFAFAFC); // Pearl
-const borderSubtle = Color(0xFFF0F0F0);
-const borderStrong = Color(0xFFE0E0E0);
-const textPrimary = Color(0xFF1D1D1F); // Ink
-const textSecondary = Color(0xFF7A7A7A); // Ink Muted 48
-const textMuted = Color(0xFFCCCCCC);
+bool _isDarkMode = false;
+
+void setVoxelDarkMode(bool enabled) => _isDarkMode = enabled;
+
+// --- PALETA APPLE ---
+Color get bgBase =>
+    _isDarkMode ? const Color(0xFF111318) : const Color(0xFFF5F5F7);
+Color get surfaceCard =>
+    _isDarkMode ? const Color(0xFF1B1E25) : const Color(0xFFFFFFFF);
+Color get surfaceElevated =>
+    _isDarkMode ? const Color(0xFF242832) : const Color(0xFFFAFAFC);
+Color get borderSubtle =>
+    _isDarkMode ? const Color(0xFF2B303A) : const Color(0xFFF0F0F0);
+Color get borderStrong =>
+    _isDarkMode ? const Color(0xFF3D4451) : const Color(0xFFE0E0E0);
+Color get textPrimary =>
+    _isDarkMode ? const Color(0xFFF1F3F6) : const Color(0xFF1D1D1F);
+Color get textSecondary =>
+    _isDarkMode ? const Color(0xFFA7AFBD) : const Color(0xFF7A7A7A);
+Color get textMuted =>
+    _isDarkMode ? const Color(0xFF727B89) : const Color(0xFFCCCCCC);
 
 // Acentos
 const accentPetrol = Color(0xFF0066CC);
@@ -25,8 +36,8 @@ const semanticDanger = Color(0xFFD96C6C);
 // Gráficas de Producción
 const chartPrimary = Color(0xFF0066CC);
 const chartPrimaryLight = Color(0xFF2997FF);
-const chartSecondary = Color(0xFF1D1D1F);
-const chartAux = Color(0xFF7A7A7A);
+Color get chartSecondary => textPrimary;
+Color get chartAux => textSecondary;
 
 // --- PALETA CENTRALIZADA DE COLORES (FILAMENTOS 3D) ---
 class VoxelColor {
@@ -60,7 +71,7 @@ const List<VoxelColor> voxelColorPalette = [
   VoxelColor(name: 'Blanco', hex: '#FFFFFF', value: 0xFFFFFFFF),
   VoxelColor(name: 'Negro', hex: '#111111', value: 0xFF111111),
   VoxelColor(name: 'Gris', hex: '#808080', value: 0xFF808080),
-  VoxelColor(name: 'Plata', hex: '#C0C0C0', value: 0xFFC0C0C0),
+  VoxelColor(name: 'Silver', hex: '#C0C0C0', value: 0xFFC0C0C0),
   VoxelColor(name: 'Rojo', hex: '#E53935', value: 0xFFE53935),
   VoxelColor(name: 'Naranja', hex: '#FB8C00', value: 0xFFFB8C00),
   VoxelColor(name: 'Amarillo', hex: '#FDD835', value: 0xFFFDD835),
@@ -74,8 +85,12 @@ const List<VoxelColor> voxelColorPalette = [
   VoxelColor(name: 'Rosa', hex: '#EC407A', value: 0xFFEC407A),
   VoxelColor(name: 'Café', hex: '#6D4C41', value: 0xFF6D4C41),
   VoxelColor(name: 'Beige', hex: '#D7C4A3', value: 0xFFD7C4A3),
-  VoxelColor(name: 'Dorado', hex: '#D4AF37', value: 0xFFD4AF37),
-  VoxelColor(name: 'Transparente', hex: '#00000000', value: 0x00000000, isTransparent: true),
+  VoxelColor(name: 'Oro', hex: '#D4AF37', value: 0xFFD4AF37),
+  VoxelColor(
+      name: 'Transparente',
+      hex: '#00000000',
+      value: 0x00000000,
+      isTransparent: true),
 ];
 
 VoxelColor findVoxelColor({int? value, String? name, String? hex}) {
@@ -104,42 +119,46 @@ VoxelColor findVoxelColor({int? value, String? name, String? hex}) {
     );
   }
   if (value != null) {
-    final hexStr = '#${value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+    final hexStr =
+        '#${value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
     return VoxelColor(name: name ?? 'Color', hex: hexStr, value: value);
   }
   return voxelColorPalette[0];
 }
 
 // Compatibilidad retroactiva
-const darkBackground = bgBase;
+Color get darkBackground => bgBase;
 const techCyan = accentPetrol;
 const techPrimaryDark = accentPetrolPressed;
-const cardWhite = surfaceCard;
-const textBlack = textPrimary;
-const inputGray = surfaceElevated;
-const iconGray = textSecondary;
+Color get cardWhite => surfaceCard;
+Color get textBlack => textPrimary;
+Color get inputGray => surfaceElevated;
+Color get iconGray => textSecondary;
 const errorRed = semanticDanger;
-const machineGray = borderStrong;
+Color get machineGray => borderStrong;
 const iridescentPink = chartPrimaryLight;
 const iridescentPurple = accentPetrol;
-const surfaceSoft = surfaceElevated;
+Color get surfaceSoft => surfaceElevated;
 
 ThemeData voxelTheme() => ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
+      brightness: _isDarkMode ? Brightness.dark : Brightness.light,
       scaffoldBackgroundColor: bgBase,
       canvasColor: surfaceCard,
-      colorScheme: const ColorScheme.light(
+      colorScheme: ColorScheme(
+        brightness: _isDarkMode ? Brightness.dark : Brightness.light,
         primary: accentPetrol,
-        onPrimary: Color(0xFFFFFFFF),
+        onPrimary: const Color(0xFFFFFFFF),
         secondary: accentAmber,
-        onSecondary: Color(0xFFFFFFFF),
+        onSecondary: const Color(0xFFFFFFFF),
         surface: surfaceCard,
         onSurface: textPrimary,
         error: semanticDanger,
-        onError: Color(0xFFFFFFFF),
+        onError: const Color(0xFFFFFFFF),
+        onSurfaceVariant: textSecondary,
+        surfaceContainerHighest: surfaceElevated,
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: bgBase,
         foregroundColor: textPrimary,
         centerTitle: true,
@@ -150,10 +169,10 @@ ThemeData voxelTheme() => ThemeData(
           fontSize: 16,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.2,
-          fontFamilyFallback: ['Inter', 'sans-serif'],
+          fontFamilyFallback: const ['Inter', 'sans-serif'],
         ),
       ),
-      dividerTheme: const DividerThemeData(
+      dividerTheme: DividerThemeData(
         color: borderSubtle,
         thickness: 1,
         space: 1,
@@ -164,7 +183,7 @@ ThemeData voxelTheme() => ThemeData(
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: borderSubtle),
+          side: BorderSide(color: borderSubtle),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -172,8 +191,8 @@ ThemeData voxelTheme() => ThemeData(
         fillColor: surfaceElevated,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        hintStyle: const TextStyle(color: textMuted, fontSize: 13),
-        labelStyle: const TextStyle(color: textSecondary, fontSize: 13),
+        hintStyle: TextStyle(color: textMuted, fontSize: 13),
+        labelStyle: TextStyle(color: textSecondary, fontSize: 13),
         floatingLabelStyle: const TextStyle(
           color: accentPetrol,
           fontSize: 12,
@@ -181,11 +200,11 @@ ThemeData voxelTheme() => ThemeData(
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: borderSubtle),
+          borderSide: BorderSide(color: borderSubtle),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: borderSubtle),
+          borderSide: BorderSide(color: borderSubtle),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -201,47 +220,47 @@ ThemeData voxelTheme() => ThemeData(
         selectionColor: Color(0x442E8B96),
         selectionHandleColor: accentPetrol,
       ),
-      textTheme: const TextTheme(
+      textTheme: TextTheme(
         headlineMedium: TextStyle(
           fontWeight: FontWeight.w800,
           fontSize: 22,
           letterSpacing: 1.0,
           color: textPrimary,
-          fontFamilyFallback: ['Inter', 'sans-serif'],
+          fontFamilyFallback: const ['Inter', 'sans-serif'],
         ),
         headlineSmall: TextStyle(
           fontWeight: FontWeight.w700,
           fontSize: 18,
           letterSpacing: 0.8,
           color: textPrimary,
-          fontFamilyFallback: ['Inter', 'sans-serif'],
+          fontFamilyFallback: const ['Inter', 'sans-serif'],
         ),
         titleMedium: TextStyle(
           fontWeight: FontWeight.w600,
           fontSize: 15,
           letterSpacing: 0.3,
           color: textPrimary,
-          fontFamilyFallback: ['Inter', 'sans-serif'],
+          fontFamilyFallback: const ['Inter', 'sans-serif'],
         ),
         bodyLarge: TextStyle(
           fontWeight: FontWeight.w500,
           fontSize: 14,
           letterSpacing: 0.2,
           color: textPrimary,
-          fontFamilyFallback: ['Inter', 'sans-serif'],
+          fontFamilyFallback: const ['Inter', 'sans-serif'],
         ),
         bodyMedium: TextStyle(
           fontWeight: FontWeight.w400,
           fontSize: 13,
           color: textSecondary,
-          fontFamilyFallback: ['Inter', 'sans-serif'],
+          fontFamilyFallback: const ['Inter', 'sans-serif'],
         ),
         labelSmall: TextStyle(
           fontWeight: FontWeight.w700,
           fontSize: 10,
           letterSpacing: 1.0,
           color: textSecondary,
-          fontFamilyFallback: ['Inter', 'sans-serif'],
+          fontFamilyFallback: const ['Inter', 'sans-serif'],
         ),
       ),
     );
@@ -259,7 +278,7 @@ InputDecoration fieldDecoration(
       suffixIcon: suffix,
       filled: true,
       fillColor: surfaceElevated,
-      labelStyle: const TextStyle(
+      labelStyle: TextStyle(
         color: textSecondary,
         fontSize: 13,
         fontWeight: FontWeight.w500,
@@ -269,15 +288,15 @@ InputDecoration fieldDecoration(
         fontSize: 12,
         fontWeight: FontWeight.w600,
       ),
-      hintStyle: const TextStyle(color: textMuted, fontSize: 13),
+      hintStyle: TextStyle(color: textMuted, fontSize: 13),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: borderSubtle),
+        borderSide: BorderSide(color: borderSubtle),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: borderSubtle),
+        borderSide: BorderSide(color: borderSubtle),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
@@ -317,7 +336,7 @@ Widget formCard({
                   children: [
                     Text(
                       title.toUpperCase(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: textSecondary,
                         fontWeight: FontWeight.w700,
                         fontSize: 11,
@@ -328,7 +347,7 @@ Widget formCard({
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: textMuted,
                           fontSize: 11,
                         ),
@@ -347,12 +366,12 @@ Widget formCard({
     );
 
 class SidebarToggleIcon extends StatelessWidget {
-  final Color color;
+  final Color? color;
   final double size;
 
   const SidebarToggleIcon({
     super.key,
-    this.color = textPrimary,
+    this.color,
     this.size = 20,
   });
 
@@ -360,7 +379,7 @@ class SidebarToggleIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomPaint(
       size: Size(size, size),
-      painter: _SidebarIconPainter(color: color),
+      painter: _SidebarIconPainter(color: color ?? textPrimary),
     );
   }
 }
@@ -423,7 +442,7 @@ PreferredSizeWidget darkAppBar(
       automaticallyImplyLeading: false,
       title: Text(
         title.toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           color: textPrimary,
           fontWeight: FontWeight.w800,
           letterSpacing: 1.2,
@@ -443,7 +462,8 @@ PreferredSizeWidget darkAppBar(
                 tooltip: leadingTooltip,
                 mouseCursor: SystemMouseCursors.click,
                 onPressed: onBack,
-                icon: leadingWidget ?? Icon(leadingIcon, color: textPrimary, size: 20),
+                icon: leadingWidget ??
+                    Icon(leadingIcon, color: textPrimary, size: 20),
               ),
             ),
       bottom: PreferredSize(
@@ -458,7 +478,8 @@ Color parseHex(String hex) {
   return Color(int.parse(value.length == 6 ? 'FF$value' : value, radix: 16));
 }
 
-Widget colorSwatchCircle(Color color, {double size = 10, bool isTransparent = false}) {
+Widget colorSwatchCircle(Color color,
+    {double size = 10, bool isTransparent = false}) {
   final isLight = color.computeLuminance() > 0.65;
   final isVeryDark = color.a > 0 && color.computeLuminance() < 0.08;
 
@@ -511,7 +532,8 @@ Future<VoxelColor?> showCustomColorDialog(
   final nameController = TextEditingController(text: initialName);
   Color selected = initialColor;
   final hexController = TextEditingController(
-    text: '#${selected.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}',
+    text:
+        '#${selected.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}',
   );
 
   const presets = [
@@ -531,6 +553,8 @@ Future<VoxelColor?> showCustomColorDialog(
     Color(0xFF76FF03), // Neón
     Color(0xFF878787), // Titanio
     Color(0xFF3D2314), // Chocolate
+    Color(0xFFD4AF37), // Oro
+    Color(0xFFC0C0C0), // Silver
   ];
 
   return showDialog<VoxelColor>(
@@ -542,12 +566,13 @@ Future<VoxelColor?> showCustomColorDialog(
             backgroundColor: surfaceCard,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: borderSubtle),
+              side: BorderSide(color: borderSubtle),
             ),
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.palette_outlined, color: accentPetrol, size: 20),
-                SizedBox(width: 8),
+                const Icon(Icons.palette_outlined,
+                    color: accentPetrol, size: 20),
+                const SizedBox(width: 8),
                 Text(
                   'COLOR PERSONALIZADO',
                   style: TextStyle(
@@ -568,11 +593,25 @@ Future<VoxelColor?> showCustomColorDialog(
                   children: [
                     TextField(
                       controller: nameController,
-                      style: const TextStyle(color: textPrimary, fontSize: 13),
+                      style: TextStyle(color: textPrimary, fontSize: 13),
                       decoration: fieldDecoration(
                         'Nombre del color',
                         hint: 'Ej: Cobre Metálico, Menta...',
                       ),
+                      onChanged: (name) {
+                        final match = voxelColorPalette.where(
+                          (item) =>
+                              item.name.toLowerCase() ==
+                              name.trim().toLowerCase(),
+                        );
+                        if (match.isEmpty) return;
+                        final color = Color(match.first.value);
+                        setDialogState(() {
+                          selected = color;
+                          hexController.text =
+                              '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+                        });
+                      },
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -582,13 +621,14 @@ Future<VoxelColor?> showCustomColorDialog(
                         Expanded(
                           child: TextField(
                             controller: hexController,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: textPrimary,
                               fontFamily: 'monospace',
                               fontWeight: FontWeight.w700,
                               fontSize: 14,
                             ),
-                            decoration: fieldDecoration('Código HEX', hint: '#RRGGBB'),
+                            decoration:
+                                fieldDecoration('Código HEX', hint: '#RRGGBB'),
                             onChanged: (val) {
                               try {
                                 final clean = val.replaceAll('#', '').trim();
@@ -603,7 +643,7 @@ Future<VoxelColor?> showCustomColorDialog(
                       ],
                     ),
                     const SizedBox(height: 18),
-                    const Text(
+                    Text(
                       'MATICES PREDEFINIDOS',
                       style: TextStyle(
                         color: textSecondary,
@@ -617,7 +657,8 @@ Future<VoxelColor?> showCustomColorDialog(
                       spacing: 8,
                       runSpacing: 8,
                       children: presets.map((color) {
-                        final isChosen = selected.toARGB32() == color.toARGB32();
+                        final isChosen =
+                            selected.toARGB32() == color.toARGB32();
                         return InkWell(
                           onTap: () {
                             setDialogState(() {
@@ -711,7 +752,7 @@ Future<VoxelColor?> showCustomColorDialog(
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogCtx),
-                child: const Text('Cancelar', style: TextStyle(color: textSecondary)),
+                child: Text('Cancelar', style: TextStyle(color: textSecondary)),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -723,13 +764,15 @@ Future<VoxelColor?> showCustomColorDialog(
                       : '#${hexController.text.toUpperCase()}';
                   Navigator.pop(
                     dialogCtx,
-                    VoxelColor(name: name, hex: hex, value: selected.toARGB32()),
+                    VoxelColor(
+                        name: name, hex: hex, value: selected.toARGB32()),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accentPetrol,
                   foregroundColor: textPrimary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
                 child: const Text('Usar Color'),
               ),
@@ -741,14 +784,16 @@ Future<VoxelColor?> showCustomColorDialog(
   );
 }
 
-Widget _colorSlider(String label, int value, Color activeColor, ValueChanged<int> onChanged) {
+Widget _colorSlider(
+    String label, int value, Color activeColor, ValueChanged<int> onChanged) {
   return Row(
     children: [
       SizedBox(
         width: 18,
         child: Text(
           label,
-          style: TextStyle(color: activeColor, fontWeight: FontWeight.w800, fontSize: 11),
+          style: TextStyle(
+              color: activeColor, fontWeight: FontWeight.w800, fontSize: 11),
         ),
       ),
       Expanded(
@@ -773,7 +818,7 @@ Widget _colorSlider(String label, int value, Color activeColor, ValueChanged<int
         child: Text(
           '$value',
           textAlign: TextAlign.end,
-          style: const TextStyle(color: textMuted, fontSize: 10),
+          style: TextStyle(color: textMuted, fontSize: 10),
         ),
       ),
     ],

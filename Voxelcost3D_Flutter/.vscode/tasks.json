@@ -2,6 +2,19 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "Preparar proyecto Windows",
+			"type": "process",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"${workspaceFolder}\\.vscode\\prepare_windows.ps1"
+			],
+			"problemMatcher": []
+		},
+		{
 			"label": "Iniciar emulador tablet",
 			"type": "process",
 			"command": "powershell.exe",
@@ -20,18 +33,26 @@
 			}
 		},
 		{
-			"label": "Ejecutar Flutter Windows diagnóstico",
-			"type": "shell",
+			"label": "Ejecutar Flutter Windows",
+			"type": "process",
 			"command": "flutter",
 			"args": [
 				"run",
 				"-d",
-				"windows",
-				"--verbose"
+				"windows"
 			],
+			"options": {
+				"cwd": "C:\\VX3D"
+			},
+			"dependsOn": "Preparar proyecto Windows",
+			"dependsOrder": "sequence",
 			"isBackground": true,
 			"problemMatcher": [],
-			"group": "build"
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated",
+				"showReuseMessage": false
+			}
 		}
 	]
 }

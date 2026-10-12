@@ -40,9 +40,30 @@ class PrintRecord {
   int date;
   List<MaterialData> materials;
   String? notes;
+  String? printerName;
+  int printerCount;
+  bool hasMaterialCombination;
 
   /// Cantidad de piezas fabricadas en este lote (entero, mínimo 1, por defecto 1)
   int cantidad;
+
+  /// Tipo de solicitante: 'Estudiante', 'Docente', 'Otro'
+  String? requesterType;
+
+  /// Nombre completo de quien solicitó la impresión
+  String? requesterName;
+
+  /// Identificador: No. de control (estudiante), No. de empleado (docente) u otro ID
+  String? requesterId;
+
+  /// Si tipo es 'Otro', detalle o rol personalizado
+  String? customRequesterType;
+
+  /// Tiempo total de la impresión (ej. '2h 30m')
+  String? printTime;
+
+  /// Nombre del proyecto
+  String? projectName;
 
   PrintRecord({
     this.id = 0,
@@ -51,9 +72,19 @@ class PrintRecord {
     required this.date,
     required this.materials,
     this.notes,
+    this.printerName,
+    this.printerCount = 1,
+    this.hasMaterialCombination = false,
     this.cantidad = 1,
+    this.requesterType,
+    this.requesterName,
+    this.requesterId,
+    this.customRequesterType,
+    this.printTime,
+    this.projectName,
   }) {
     if (cantidad < 1) cantidad = 1;
+    printerCount = printerCount.clamp(1, 100).toInt();
   }
 
   /// Consumo total de filamento del lote = suma de (gramos por unidad × cantidad)
@@ -71,7 +102,16 @@ class PrintRecord {
         'date': date,
         'materials': jsonEncode(materials.map((item) => item.toJson()).toList()),
         'notes': notes,
+        'printerName': printerName,
+        'printerCount': printerCount,
+        'hasMaterialCombination': hasMaterialCombination,
         'cantidad': cantidad < 1 ? 1 : cantidad,
+        'requesterType': requesterType,
+        'requesterName': requesterName,
+        'requesterId': requesterId,
+        'customRequesterType': customRequesterType,
+        'printTime': printTime,
+        'projectName': projectName,
       };
 
   factory PrintRecord.fromMap(Map<String, dynamic> map) => PrintRecord(
@@ -83,7 +123,16 @@ class PrintRecord {
             .map((item) => MaterialData.fromJson(Map<String, dynamic>.from(item)))
             .toList(),
         notes: map['notes'] as String?,
+        printerName: map['printerName'] as String?,
+        printerCount: (map['printerCount'] as num?)?.toInt() ?? 1,
+        hasMaterialCombination: map['hasMaterialCombination'] as bool? ?? false,
         cantidad: (map['cantidad'] as num?)?.toInt() ?? 1,
+        requesterType: map['requesterType'] as String?,
+        requesterName: map['requesterName'] as String?,
+        requesterId: map['requesterId'] as String?,
+        customRequesterType: map['customRequesterType'] as String?,
+        printTime: map['printTime'] as String?,
+        projectName: map['projectName'] as String?,
       );
 }
 class InventoryItem {

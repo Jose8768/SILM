@@ -52,6 +52,18 @@ flutter pub get
 flutter run
 ```
 
+### Ejecutar en macOS
+
+La carpeta `macos/` contiene el runner de escritorio de Flutter (requiere macOS 12 o posterior). Para compilar y ejecutar, abre el proyecto en una Mac con Flutter y Xcode instalados:
+
+```bash
+flutter doctor
+flutter pub get
+flutter run -d macos
+```
+
+La compilación macOS no se puede realizar desde Windows; debe hacerse en macOS con Xcode. Antes de distribuir la app, cambia `PRODUCT_BUNDLE_IDENTIFIER` en `macos/Runner/Configs/AppInfo.xcconfig` por un identificador propio de tu organización.
+
 ### Escoger emulador desde VS Code
 
 En la configuración de ejecución selecciona `Voxelcost3D_Flutter: escoger dispositivo` y pulsa `F5`. VS Code mostrará los dispositivos disponibles para elegir Windows, Chrome, Edge o un emulador Android conectado.

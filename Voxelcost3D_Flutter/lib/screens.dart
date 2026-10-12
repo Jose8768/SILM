@@ -9,7 +9,9 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart' as share_plus;
 import 'controllers.dart';
 import 'database.dart';
+import 'hover_menu_item.dart';
 import 'models.dart';
+import 'pedido_materiales.dart' show PedidoMaterialesWidget;
 import 'theme.dart';
 
 void toast(BuildContext context, String message, {bool isError = false}) {
@@ -34,7 +36,7 @@ void toast(BuildContext context, String message, {bool isError = false}) {
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
+              style: TextStyle(
                 color: textPrimary,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -53,15 +55,15 @@ Widget techButton(
   String text,
   VoidCallback? onPressed, {
   Color color = accentPetrol,
-  Color foreground = textPrimary,
+  Color? foreground,
   IconData? icon,
   bool isOutlined = false,
   double height = 44,
 }) {
+  final buttonForeground = foreground ?? textPrimary;
   return MouseRegion(
-    cursor: onPressed != null
-        ? SystemMouseCursors.click
-        : SystemMouseCursors.basic,
+    cursor:
+        onPressed != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
     child: SizedBox(
       height: height,
       child: isOutlined
@@ -77,8 +79,8 @@ Widget techButton(
                 ),
               ),
               style: OutlinedButton.styleFrom(
-                foregroundColor: foreground,
-                side: const BorderSide(color: borderSubtle),
+                foregroundColor: buttonForeground,
+                side: BorderSide(color: borderSubtle),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -97,7 +99,7 @@ Widget techButton(
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: color,
-                foregroundColor: foreground,
+                foregroundColor: buttonForeground,
                 elevation: 0,
                 shadowColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
@@ -190,11 +192,11 @@ class _LoginState extends State<LoginScreen> with RestorationMixin {
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: bgBase,
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: RadialGradient(
-              center: Alignment(0, -0.2),
+              center: const Alignment(0, -0.2),
               radius: 1.2,
-              colors: [Color(0xFF1B2027), bgBase],
+              colors: [const Color(0xFF1B2027), bgBase],
             ),
           ),
           child: Center(
@@ -239,7 +241,7 @@ class _LoginState extends State<LoginScreen> with RestorationMixin {
                         ),
                       ),
                       const SizedBox(height: 18),
-                      const Text(
+                      Text(
                         'VOXELCOST3D',
                         textAlign: TextAlign.center,
                         style: TextStyle(
@@ -250,7 +252,7 @@ class _LoginState extends State<LoginScreen> with RestorationMixin {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
+                      Text(
                         'SISTEMA DE CONTROL DE FABRICACIÓN',
                         textAlign: TextAlign.center,
                         style: TextStyle(
@@ -271,11 +273,11 @@ class _LoginState extends State<LoginScreen> with RestorationMixin {
                         textInputAction: TextInputAction.next,
                         onTap: () => _openKeyboard(userFocus),
                         onEditingComplete: () => passwordFocus.requestFocus(),
-                        style: const TextStyle(color: textPrimary, fontSize: 13),
+                        style: TextStyle(color: textPrimary, fontSize: 13),
                         decoration: fieldDecoration(
                           'Operador / ID',
                           hint: 'admin',
-                          prefix: const Icon(Icons.person_outline,
+                          prefix: Icon(Icons.person_outline,
                               color: textSecondary, size: 18),
                         ),
                       ),
@@ -290,11 +292,11 @@ class _LoginState extends State<LoginScreen> with RestorationMixin {
                         textInputAction: TextInputAction.done,
                         onTap: () => _openKeyboard(passwordFocus),
                         onSubmitted: (_) => _login(),
-                        style: const TextStyle(color: textPrimary, fontSize: 13),
+                        style: TextStyle(color: textPrimary, fontSize: 13),
                         decoration: fieldDecoration(
                           'Contraseña',
                           hint: 'admin123',
-                          prefix: const Icon(Icons.lock_outline,
+                          prefix: Icon(Icons.lock_outline,
                               color: textSecondary, size: 18),
                           suffix: IconButton(
                             tooltip: _passwordVisible
@@ -337,12 +339,114 @@ enum ActivePanel {
   printHistory,
   inventory,
   analytics,
+  materialOrder,
   export,
+}
+
+class _ThemeModeSwitch extends StatelessWidget {
+  final bool isDarkMode;
+  final ValueChanged<bool> onChanged;
+
+  const _ThemeModeSwitch({
+    required this.isDarkMode,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+        message: isDarkMode ? 'Activar modo claro' : 'Activar modo oscuro',
+        child: Semantics(
+          button: true,
+          toggled: isDarkMode,
+          label: 'Modo oscuro',
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => onChanged(!isDarkMode),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeInOut,
+                width: 78,
+                height: 36,
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: surfaceElevated,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: borderStrong),
+                ),
+                child: Stack(
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 5),
+                        child: Icon(
+                          Icons.light_mode_rounded,
+                          size: 17,
+                          color: isDarkMode ? textMuted : accentAmber,
+                        ),
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 5),
+                        child: Icon(
+                          Icons.dark_mode_rounded,
+                          size: 17,
+                          color: isDarkMode ? accentPetrol : textMuted,
+                        ),
+                      ),
+                    ),
+                    AnimatedAlign(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeInOut,
+                      alignment: isDarkMode
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: surfaceCard,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.16),
+                              blurRadius: 5,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          isDarkMode
+                              ? Icons.dark_mode_rounded
+                              : Icons.light_mode_rounded,
+                          size: 16,
+                          color: isDarkMode ? accentPetrol : accentAmber,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
 }
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onLogout;
-  const HomeScreen({super.key, required this.onLogout});
+  final bool isDarkMode;
+  final ValueChanged<bool> onThemeModeChanged;
+
+  const HomeScreen({
+    super.key,
+    required this.onLogout,
+    required this.isDarkMode,
+    required this.onThemeModeChanged,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -455,7 +559,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Container(
                       decoration: BoxDecoration(
                         color: surfaceCard,
-                        border: const Border(
+                        border: Border(
                           right: BorderSide(color: borderSubtle),
                         ),
                         boxShadow: (_isHovered && !_isPinned)
@@ -508,6 +612,13 @@ class _HomeScreenState extends State<HomeScreen> {
           vm: printVm,
           inventoryVm: inventoryVm,
         );
+      case ActivePanel.materialOrder:
+        return MaterialOrderScreen(
+          inventoryVm: inventoryVm,
+          onToggleMenu: _togglePinned,
+          onHoverMenu: () => _onHoverMenu(true),
+          isPinned: _isPinned,
+        );
       case ActivePanel.export:
         return ExportScreen(
           onToggleMenu: _togglePinned,
@@ -529,7 +640,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             height: kToolbarHeight,
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: bgBase,
               border: Border(bottom: BorderSide(color: borderSubtle)),
             ),
@@ -549,7 +660,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'MENÚ PRINCIPAL',
                     style: TextStyle(
@@ -561,33 +672,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Container(
-                  margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: semanticSuccess.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: semanticSuccess.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.circle,
-                          size: 5, color: semanticSuccess),
-                      SizedBox(width: 5),
-                      Text(
-                        'OPERATIVO',
-                        style: TextStyle(
-                          color: semanticSuccess,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: _ThemeModeSwitch(
+                    isDarkMode: widget.isDarkMode,
+                    onChanged: widget.onThemeModeChanged,
                   ),
                 ),
               ],
@@ -611,28 +700,34 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                _sidebarOptionCard(
+                HoverMenuItem(
                   title: 'Registro de Impresiones',
                   icon: Icons.view_in_ar_rounded,
-                  isActive: _activePanel == ActivePanel.printHistory,
+                  selected: _activePanel == ActivePanel.printHistory,
                   onTap: () => _selectPanel(ActivePanel.printHistory),
                 ),
-                _sidebarOptionCard(
+                HoverMenuItem(
                   title: 'Inventario de Materiales',
                   icon: Icons.inventory_2_rounded,
-                  isActive: _activePanel == ActivePanel.inventory,
+                  selected: _activePanel == ActivePanel.inventory,
                   onTap: () => _selectPanel(ActivePanel.inventory),
                 ),
-                _sidebarOptionCard(
+                HoverMenuItem(
                   title: 'Análisis de Producción',
                   icon: Icons.bar_chart_rounded,
-                  isActive: _activePanel == ActivePanel.analytics,
+                  selected: _activePanel == ActivePanel.analytics,
                   onTap: () => _selectPanel(ActivePanel.analytics),
                 ),
-                _sidebarOptionCard(
+                HoverMenuItem(
+                  title: 'Pedido de Material',
+                  icon: Icons.shopping_cart_outlined,
+                  selected: _activePanel == ActivePanel.materialOrder,
+                  onTap: () => _selectPanel(ActivePanel.materialOrder),
+                ),
+                HoverMenuItem(
                   title: 'Exportar',
                   icon: Icons.download_rounded,
-                  isActive: _activePanel == ActivePanel.export,
+                  selected: _activePanel == ActivePanel.export,
                   onTap: () => _selectPanel(ActivePanel.export),
                 ),
               ],
@@ -640,7 +735,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           // Pie del Menú con Cerrar Sesión
-          const Divider(color: borderSubtle, height: 1),
+          Divider(color: borderSubtle, height: 1),
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
             child: Column(
@@ -657,11 +752,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: borderSubtle),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.logout_rounded, size: 16, color: textSecondary),
-                        SizedBox(width: 8),
+                        Icon(Icons.logout_rounded,
+                            size: 16, color: textSecondary),
+                        const SizedBox(width: 8),
                         Text(
                           'CERRAR SESIÓN',
                           style: TextStyle(
@@ -676,7 +772,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
+                Text(
                   'VoxelCost 3D · Control de Taller',
                   style: TextStyle(
                     color: textMuted,
@@ -691,77 +787,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  Widget _sidebarOptionCard({
-    required String title,
-    required IconData icon,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) =>
-      Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onTap,
-            mouseCursor: SystemMouseCursors.click,
-            borderRadius: BorderRadius.circular(8),
-            hoverColor: isActive
-                ? accentPetrol.withValues(alpha: 0.18)
-                : surfaceElevated,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: isActive
-                    ? accentPetrol.withValues(alpha: 0.15)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    icon,
-                    color: isActive ? accentPetrol : textSecondary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        color: isActive ? accentPetrol : textPrimary,
-                        fontSize: 13,
-                        fontWeight:
-                            isActive ? FontWeight.w700 : FontWeight.w500,
-                        letterSpacing: 0.2,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (isActive)
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: accentPetrol,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    )
-                  else
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      size: 16,
-                      color: textMuted,
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
 
   Widget _buildWelcomePanel(BuildContext context) {
     return AnimatedBuilder(
@@ -784,11 +809,13 @@ class _HomeScreenState extends State<HomeScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: double.infinity),
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                 children: [
                   // Cabecera compacta con saludo industrial
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 16),
                     decoration: BoxDecoration(
                       color: surfaceCard,
                       borderRadius: BorderRadius.circular(12),
@@ -809,7 +836,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               size: 24, color: accentPetrol),
                         ),
                         const SizedBox(width: 16),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -822,7 +849,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   letterSpacing: 1.1,
                                 ),
                               ),
-                              SizedBox(height: 2),
+                              const SizedBox(height: 2),
                               Text(
                                 '¡BIENVENIDO!',
                                 style: TextStyle(
@@ -887,8 +914,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 '${printVm.totalPrints} registros técnicos en historial',
                             icon: Icons.precision_manufacturing_outlined,
                             iconColor: accentAmber,
-                            badgeText:
-                                printVm.totalPieces > 0 ? 'Activo' : 'Sin piezas',
+                            badgeText: printVm.totalPieces > 0
+                                ? 'Activo'
+                                : 'Sin piezas',
                           ),
                         ),
                         SizedBox(
@@ -945,9 +973,8 @@ class _HomeScreenState extends State<HomeScreen> {
           color: surfaceCard,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isAlert
-                ? semanticDanger.withValues(alpha: 0.5)
-                : borderSubtle,
+            color:
+                isAlert ? semanticDanger.withValues(alpha: 0.5) : borderSubtle,
           ),
         ),
         child: Column(
@@ -967,7 +994,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: textSecondary,
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
@@ -1011,7 +1038,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: const TextStyle(
+              style: TextStyle(
                 color: textSecondary,
                 fontSize: 11,
               ),
@@ -1044,7 +1071,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       size: 18, color: accentPetrol),
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'ÚLTIMA PIEZA REGISTRADA',
                     style: TextStyle(
@@ -1058,14 +1085,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (latest != null)
                   Text(
                     dateText(latest.date, short: true),
-                    style: const TextStyle(color: textMuted, fontSize: 10),
+                    style: TextStyle(color: textMuted, fontSize: 10),
                   ),
               ],
             ),
             const SizedBox(height: 12),
             if (latest == null)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 4),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Text(
                   'Aún no hay impresiones registradas',
                   style: TextStyle(color: textSecondary, fontSize: 12),
@@ -1076,8 +1103,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      latest.pieceType,
-                      style: const TextStyle(
+                      (latest.projectName ?? '').trim().isNotEmpty
+                          ? latest.projectName!
+                          : latest.pieceType,
+                      style: TextStyle(
                         color: textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -1109,10 +1138,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ],
               ),
+              if ((latest.projectName ?? '').trim().isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  'Archivo: ${latest.pieceType}',
+                  style: TextStyle(color: textSecondary, fontSize: 11),
+                ),
+              ],
               const SizedBox(height: 3),
               Text(
                 'Categoría: ${latest.figureCategory} · ${latest.totalGrams.toStringAsFixed(1)}g total${latest.cantidad > 1 ? ' (${latest.unitGrams.toStringAsFixed(1)}g c/u)' : ''}',
-                style: const TextStyle(color: textSecondary, fontSize: 11),
+                style: TextStyle(color: textSecondary, fontSize: 11),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -1132,7 +1168,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         latest.cantidad > 1
                             ? '${m.type} (${itemTotalGrams.toStringAsFixed(1)}g)'
                             : '${m.type} (${m.grams.toStringAsFixed(1)}g)',
-                        style: const TextStyle(
+                        style: TextStyle(
                             color: textPrimary,
                             fontSize: 11,
                             fontWeight: FontWeight.w600),
@@ -1143,6 +1179,170 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ],
+        ),
+      );
+}
+
+class MaterialOrderScreen extends StatefulWidget {
+  final InventoryViewModel inventoryVm;
+  final VoidCallback onToggleMenu;
+  final VoidCallback onHoverMenu;
+  final bool isPinned;
+
+  const MaterialOrderScreen({
+    super.key,
+    required this.inventoryVm,
+    required this.onToggleMenu,
+    required this.onHoverMenu,
+    required this.isPinned,
+  });
+
+  @override
+  State<MaterialOrderScreen> createState() => _MaterialOrderScreenState();
+}
+
+class _MaterialOrderScreenState extends State<MaterialOrderScreen> {
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: widget.inventoryVm,
+        builder: (context, _) {
+          final lowStockItems = widget.inventoryVm.lowStockItems;
+          final depletedCount =
+              lowStockItems.where((item) => item.isDepleted).length;
+          final itemsToOrder = lowStockItems.length;
+
+          return Scaffold(
+            backgroundColor: bgBase,
+            appBar: darkAppBar(
+              'PEDIDO DE MATERIAL',
+              widget.onToggleMenu,
+              leadingWidget: const SidebarToggleIcon(),
+              onHoverEnter: widget.onHoverMenu,
+              hideLeading: widget.isPinned,
+            ),
+            body: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                if (widget.inventoryVm.error != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: semanticDanger.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: semanticDanger.withValues(alpha: 0.4)),
+                    ),
+                    child: Text(
+                      widget.inventoryVm.error!,
+                      style:
+                          const TextStyle(color: semanticDanger, fontSize: 13),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                const PedidoMaterialesWidget(
+                  embedded: true,
+                ),
+                const SizedBox(height: 16),
+                formCard(
+                  title: 'Lista de pedido',
+                  subtitle:
+                      'El inventario marca para reponer las bobinas con 20% o menos',
+                  child: lowStockItems.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          child: Center(
+                            child: Text(
+                              'No hay materiales por acabarse. Puedes agregar materiales por escrito.',
+                              textAlign: TextAlign.center,
+                              style:
+                                  TextStyle(color: textSecondary, fontSize: 13),
+                            ),
+                          ),
+                        )
+                      : SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            columns: const [
+                              DataColumn(label: Text('MATERIAL')),
+                              DataColumn(label: Text('COLOR / DETALLE')),
+                              DataColumn(label: Text('STOCK')),
+                              DataColumn(label: Text('DISPONIBLE')),
+                              DataColumn(label: Text('ESTADO')),
+                              DataColumn(label: Text('')),
+                            ],
+                            rows: [
+                              ...lowStockItems.map((item) {
+                                final ratio = item.remainingRatio;
+                                final statusColor = item.isDepleted
+                                    ? semanticDanger
+                                    : semanticWarning;
+                                return DataRow(cells: [
+                                  DataCell(Text(item.material,
+                                      style: TextStyle(
+                                          color: textPrimary,
+                                          fontWeight: FontWeight.w600))),
+                                  DataCell(Text('${item.color} · ${item.brand}',
+                                      style: TextStyle(color: textSecondary))),
+                                  DataCell(Text(
+                                      '${item.stockActual.toStringAsFixed(0)} / ${item.stockInicial.toStringAsFixed(0)} g',
+                                      style: TextStyle(color: textPrimary))),
+                                  DataCell(
+                                    SizedBox(
+                                      width: 120,
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: LinearProgressIndicator(
+                                              value: ratio,
+                                              minHeight: 6,
+                                              backgroundColor: borderSubtle,
+                                              color: statusColor,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text('${(ratio * 100).round()}%',
+                                              style: TextStyle(
+                                                  color: statusColor,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w700)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(_orderStatusBadge(
+                                      item.isDepleted ? 'AGOTADO' : 'PEDIR',
+                                      statusColor)),
+                                  const DataCell(SizedBox.shrink()),
+                                ]);
+                              }),
+                            ],
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+
+
+  Widget _orderStatusBadge(String label, Color color) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.4,
+          ),
         ),
       );
 }
@@ -1209,19 +1409,32 @@ class _HistoryState extends State<PrintHistoryScreen> {
     return vm.allRecords.where((r) {
       // 1. Filtro por Chips
       if (_activeFilter == 'PLA') {
-        if (!r.materials.any((m) => m.type.toUpperCase() == 'PLA')) return false;
+        if (!r.materials.any((m) => m.type.toUpperCase() == 'PLA')) {
+          return false;
+        }
       } else if (_activeFilter == 'PETG') {
-        if (!r.materials.any((m) => m.type.toUpperCase() == 'PETG')) return false;
+        if (!r.materials.any((m) => m.type.toUpperCase() == 'PETG')) {
+          return false;
+        }
       } else if (_activeFilter == 'Este mes') {
         final d = DateTime.fromMillisecondsSinceEpoch(r.date);
         if (d.year != now.year || d.month != now.month) return false;
       }
 
-      // 2. Filtro por búsqueda (nombre o color)
+      // 2. Filtro por búsqueda (archivo, proyecto, solicitante, no. de control, impresora o color)
       if (query.isNotEmpty) {
         final matchPiece = r.pieceType.toLowerCase().contains(query);
+        final matchProject =
+            (r.projectName ?? '').toLowerCase().contains(query);
         final matchCategory = r.figureCategory.toLowerCase().contains(query);
         final matchNotes = (r.notes ?? '').toLowerCase().contains(query);
+        final matchRequester =
+            (r.requesterName ?? '').toLowerCase().contains(query);
+        final matchReqId = (r.requesterId ?? '').toLowerCase().contains(query);
+        final matchReqType =
+            (r.requesterType ?? '').toLowerCase().contains(query);
+        final matchPrinter =
+            (r.printerName ?? '').toLowerCase().contains(query);
         final matchMaterial = r.materials.any((m) {
           final cName = (m.colorName ?? '').toLowerCase();
           final mType = m.type.toLowerCase();
@@ -1230,7 +1443,15 @@ class _HistoryState extends State<PrintHistoryScreen> {
               mType.contains(query) ||
               colorObj.name.toLowerCase().contains(query);
         });
-        if (!matchPiece && !matchCategory && !matchNotes && !matchMaterial) {
+        if (!matchPiece &&
+            !matchProject &&
+            !matchCategory &&
+            !matchNotes &&
+            !matchMaterial &&
+            !matchRequester &&
+            !matchReqId &&
+            !matchReqType &&
+            !matchPrinter) {
           return false;
         }
       }
@@ -1266,20 +1487,20 @@ class _HistoryState extends State<PrintHistoryScreen> {
                             PrintFormScreen(vm: vm, inventoryVm: inventoryVm),
                       ),
                     ),
-                    icon: const Icon(Icons.add, size: 16, color: textPrimary),
+                    icon: const Icon(Icons.add, size: 16, color: Colors.white),
                     label: const Text('Nueva impresión',
                         style: TextStyle(
-                            color: textPrimary,
+                            color: Colors.white,
                             fontSize: 13,
                             fontWeight: FontWeight.w700)),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 0),
-                      backgroundColor: surfaceElevated,
+                      backgroundColor: const Color(0xFF0066CC),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
-                        side: const BorderSide(color: borderSubtle),
+                        side: BorderSide(color: borderSubtle),
                       ),
                     ),
                   ),
@@ -1295,7 +1516,6 @@ class _HistoryState extends State<PrintHistoryScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   children: [
-
                     // 2. Barra de búsqueda y chips de filtro
                     _searchAndFilterRow(),
                     const SizedBox(height: 16),
@@ -1322,14 +1542,14 @@ class _HistoryState extends State<PrintHistoryScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.layers_clear_outlined,
+                            Icon(Icons.layers_clear_outlined,
                                 size: 40, color: textMuted),
                             const SizedBox(height: 12),
                             Text(
                               vm.allRecords.isEmpty
                                   ? 'No hay impresiones registradas en el historial'
                                   : 'No se encontraron registros que coincidan con la búsqueda o filtro',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: textSecondary,
                                 fontSize: 13,
                               ),
@@ -1376,7 +1596,6 @@ class _HistoryState extends State<PrintHistoryScreen> {
         ),
       );
 
-
   Widget _searchAndFilterRow() {
     return LayoutBuilder(builder: (context, constraints) {
       final isNarrow = constraints.maxWidth < 620;
@@ -1384,15 +1603,15 @@ class _HistoryState extends State<PrintHistoryScreen> {
       final searchField = TextField(
         controller: _searchController,
         onChanged: (_) => setState(() {}),
-        style: const TextStyle(color: textPrimary, fontSize: 13),
+        style: TextStyle(color: textPrimary, fontSize: 13),
         decoration: InputDecoration(
           isDense: true,
           hintText: 'Buscar pieza o color',
-          hintStyle: const TextStyle(color: textMuted, fontSize: 13),
-          prefixIcon: const Icon(Icons.search, size: 18, color: textMuted),
+          hintStyle: TextStyle(color: textMuted, fontSize: 13),
+          prefixIcon: Icon(Icons.search, size: 18, color: textMuted),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.close, size: 16, color: textMuted),
+                  icon: Icon(Icons.close, size: 16, color: textMuted),
                   onPressed: () {
                     _searchController.clear();
                     setState(() {});
@@ -1405,11 +1624,11 @@ class _HistoryState extends State<PrintHistoryScreen> {
               const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: borderSubtle),
+            borderSide: BorderSide(color: borderSubtle),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: borderSubtle),
+            borderSide: BorderSide(color: borderSubtle),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
@@ -1464,9 +1683,7 @@ class _HistoryState extends State<PrintHistoryScreen> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         decoration: BoxDecoration(
-          color: isSelected
-              ? surfaceElevated
-              : bgBase,
+          color: isSelected ? surfaceElevated : bgBase,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected ? textSecondary : borderSubtle,
@@ -1486,11 +1703,11 @@ class _HistoryState extends State<PrintHistoryScreen> {
   }
 
   Widget _tableHeader() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       child: Row(
         children: [
-          SizedBox(width: 24),
+          const SizedBox(width: 24),
           Text(
             'PIEZA',
             style: TextStyle(
@@ -1500,7 +1717,7 @@ class _HistoryState extends State<PrintHistoryScreen> {
               letterSpacing: 1.0,
             ),
           ),
-          Spacer(),
+          const Spacer(),
           SizedBox(
             width: 100,
             child: Text(
@@ -1514,7 +1731,7 @@ class _HistoryState extends State<PrintHistoryScreen> {
               ),
             ),
           ),
-          SizedBox(width: 40),
+          const SizedBox(width: 40),
         ],
       ),
     );
@@ -1543,13 +1760,13 @@ class _HistoryState extends State<PrintHistoryScreen> {
           backgroundColor: surfaceCard,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: borderSubtle),
+            side: BorderSide(color: borderSubtle),
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.warning_amber_rounded,
+              const Icon(Icons.warning_amber_rounded,
                   color: semanticDanger, size: 22),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
                 'Eliminar Registro',
                 style: TextStyle(
@@ -1566,11 +1783,12 @@ class _HistoryState extends State<PrintHistoryScreen> {
             children: [
               Text(
                 '¿Eliminar "${r.pieceType}"? Esta acción no se puede deshacer.',
-                style: const TextStyle(color: textSecondary, fontSize: 13),
+                style: TextStyle(color: textSecondary, fontSize: 13),
               ),
               const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: surfaceElevated,
                   borderRadius: BorderRadius.circular(8),
@@ -1589,7 +1807,7 @@ class _HistoryState extends State<PrintHistoryScreen> {
                       },
                     ),
                     const SizedBox(width: 4),
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Devolver filamento al inventario',
                         style: TextStyle(
@@ -1607,7 +1825,7 @@ class _HistoryState extends State<PrintHistoryScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: const Text('Cancelar',
+              child: Text('Cancelar',
                   style: TextStyle(color: textSecondary, fontSize: 12)),
             ),
             ElevatedButton(
@@ -1728,6 +1946,10 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
     final dateStr = dateText(r.date);
     final isMultiQty = r.cantidad > 1;
 
+    final hasProjectName = (r.projectName ?? '').trim().isNotEmpty;
+    final mainTitle = hasProjectName ? r.projectName!.trim() : r.pieceType;
+    final subtitleFileName = hasProjectName ? r.pieceType : null;
+
     final totalGramsStr = r.totalGrams % 1 == 0
         ? '${r.totalGrams.toInt()} g'
         : '${r.totalGrams.toStringAsFixed(1)} g';
@@ -1770,14 +1992,14 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Fila superior: Título con cantidad y categoría
+                    // Fila superior: Nombre del proyecto en grande (o archivo como respaldo)
                     Row(
                       children: [
                         Flexible(
                           child: Text.rich(
                             TextSpan(
-                              text: r.pieceType,
-                              style: const TextStyle(
+                              text: mainTitle,
+                              style: TextStyle(
                                 color: textPrimary,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
@@ -1798,7 +2020,8 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (showActions && r.figureCategory.trim().isNotEmpty) ...[
+                        if (showActions &&
+                            r.figureCategory.trim().isNotEmpty) ...[
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -1810,7 +2033,7 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
                             ),
                             child: Text(
                               r.figureCategory,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: textSecondary,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w500,
@@ -1820,10 +2043,111 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
                         ],
                       ],
                     ),
+                    // Archivo 3D (cuando el título principal es el nombre del proyecto)
+                    if (subtitleFileName != null && subtitleFileName.trim().isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Icon(Icons.insert_drive_file_outlined,
+                              size: 12, color: accentPetrol),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              'Archivo: $subtitleFileName',
+                              style: TextStyle(
+                                color: textSecondary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    // Solicitante (si está disponible)
+                    if ((r.requesterName ?? '').trim().isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Icon(
+                            r.requesterType == 'Docente'
+                                ? Icons.badge_outlined
+                                : (r.requesterType == 'Otro'
+                                    ? Icons.person_outline
+                                    : Icons.school_outlined),
+                            size: 12,
+                            color: accentPetrol,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              '${r.requesterName} · ${r.requesterType ?? 'Solicitante'}${r.requesterId != null && r.requesterId!.isNotEmpty ? ' (${r.requesterId})' : ''}',
+                              style: TextStyle(
+                                color: textSecondary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     if (showActions) ...[
                       const SizedBox(height: 4),
                       // Fila inferior: Fecha y material(es)
                       _buildMaterialSubtitle(dateStr, distinctMaterials),
+                      if ((r.printerName ?? '').trim().isNotEmpty ||
+                          (r.printTime ?? '').trim().isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            if ((r.printerName ?? '').trim().isNotEmpty)
+                              Flexible(
+                                child: Text(
+                                  'Impresora: ${r.printerName}',
+                                  style: TextStyle(
+                                    color: textSecondary,
+                                    fontSize: 10,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            if ((r.printTime ?? '').trim().isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: surfaceElevated,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: borderSubtle),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.schedule,
+                                        size: 10, color: accentPetrol),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      r.printTime!,
+                                      style: TextStyle(
+                                        color: textPrimary,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
                     ],
                   ],
                 ),
@@ -1839,7 +2163,7 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
                   children: [
                     Text(
                       totalGramsStr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -1849,7 +2173,7 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
                       const SizedBox(height: 1),
                       Text(
                         unitGramsStr,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: textMuted,
                           fontSize: 10,
                           fontWeight: FontWeight.w400,
@@ -1876,12 +2200,12 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
                       color: surfaceCard,
                       elevation: 6,
                       padding: EdgeInsets.zero,
-                      icon: const Icon(Icons.more_vert,
-                          size: 18, color: textSecondary),
+                      icon:
+                          Icon(Icons.more_vert, size: 18, color: textSecondary),
                       constraints: const BoxConstraints(minWidth: 130),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
-                        side: const BorderSide(color: borderSubtle),
+                        side: BorderSide(color: borderSubtle),
                       ),
                       onSelected: (val) {
                         if (val == 'edit') {
@@ -1900,14 +2224,14 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
                         }
                       },
                       itemBuilder: (ctx) => [
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'edit',
                           height: 36,
                           child: Row(
                             children: [
                               Icon(Icons.edit_outlined,
                                   size: 16, color: textPrimary),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text('Editar',
                                   style: TextStyle(
                                       color: textPrimary,
@@ -1951,7 +2275,7 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
       // 1 solo material/color: texto normal
       return Text(
         '$dateStr · ${materials.first.fullName}',
-        style: const TextStyle(
+        style: TextStyle(
           color: textSecondary,
           fontSize: 11,
           fontWeight: FontWeight.w400,
@@ -2001,7 +2325,7 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
             ),
             child: Text(
               '+$remainingCount',
-              style: const TextStyle(
+              style: TextStyle(
                 color: textSecondary,
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
@@ -2017,7 +2341,7 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
       children: [
         Text(
           '$dateStr · ',
-          style: const TextStyle(
+          style: TextStyle(
             color: textSecondary,
             fontSize: 11,
             fontWeight: FontWeight.w400,
@@ -2042,12 +2366,97 @@ class PrintFormScreen extends StatefulWidget {
   State<PrintFormScreen> createState() => _FormState();
 }
 
+class PredefinedPrinter {
+  final String key;
+  final String displayName;
+  final String printerName;
+  final int maxCount;
+  final bool isUnique;
+
+  const PredefinedPrinter({
+    required this.key,
+    required this.displayName,
+    required this.printerName,
+    this.maxCount = 1,
+    this.isUnique = false,
+  });
+}
+
+const List<PredefinedPrinter> predefinedPrinters = [
+  PredefinedPrinter(
+    key: 'flashforge_creator_3_pro',
+    displayName: 'FLASHFORGE CREATOR 3 PRO',
+    printerName: 'Flashforge Creator 3 Pro',
+    maxCount: 1,
+    isUnique: true,
+  ),
+  PredefinedPrinter(
+    key: 'creality_ender_v3_se',
+    displayName: 'CREALITY ENDER V3 SE',
+    printerName: 'Creality Ender V3 SE',
+    maxCount: 1,
+    isUnique: true,
+  ),
+  PredefinedPrinter(
+    key: 'bambulab_a1_mini_combo',
+    displayName: 'BAMBULAB A1 MINI COMBO',
+    printerName: 'Bambulab A1 Mini Combo',
+    maxCount: 6,
+    isUnique: false,
+  ),
+  PredefinedPrinter(
+    key: 'bambu_lab_h2c',
+    displayName: 'BAMBU LAB H2C',
+    printerName: 'Bambu Lab H2C',
+    maxCount: 2,
+    isUnique: false,
+  ),
+  PredefinedPrinter(
+    key: 'custom',
+    displayName: '+ Nueva impresora / Otra',
+    printerName: '',
+    maxCount: 100,
+    isUnique: false,
+  ),
+];
+
+class _PrinterFormEntry {
+  String? selectedKey;
+  Set<int> selectedUnits;
+  final TextEditingController customNameController;
+  final TextEditingController customCountController;
+
+  _PrinterFormEntry({
+    this.selectedKey,
+    Set<int>? selectedUnits,
+    String customName = '',
+    String customCount = '1',
+  })  : selectedUnits = selectedUnits ?? {1},
+        customNameController = TextEditingController(text: customName),
+        customCountController = TextEditingController(text: customCount);
+
+  void dispose() {
+    customNameController.dispose();
+    customCountController.dispose();
+  }
+
+  bool get isConfigured {
+    if (selectedKey == null) return false;
+    if (selectedKey == 'custom') {
+      return customNameController.text.trim().isNotEmpty;
+    }
+    return true;
+  }
+}
+
 class _FormState extends State<PrintFormScreen> {
   late final InventoryViewModel inventoryVm;
   bool _ownsInvVm = false;
   late TextEditingController name, notes, customCategory;
   late TextEditingController qtyController;
+  late List<_PrinterFormEntry> printerEntries;
   int cantidad = 1;
+  bool _hasMaterialCombination = false;
   String? category;
   DateTime selectedDate = DateTime.now();
   final categories = [
@@ -2072,6 +2481,113 @@ class _FormState extends State<PrintFormScreen> {
   late List<_MaterialForm> materials;
   bool _saving = false;
 
+  Set<int> _parseUnitsFromName(String name, int count, int maxCount) {
+    final regExp = RegExp(r'#(\d+)');
+    final matches = regExp.allMatches(name);
+    final units = <int>{};
+    for (final m in matches) {
+      final u = int.tryParse(m.group(1) ?? '');
+      if (u != null && u >= 1 && u <= maxCount) {
+        units.add(u);
+      }
+    }
+    if (units.isNotEmpty) return units;
+    final safeCount = count.clamp(1, maxCount);
+    return List.generate(safeCount, (i) => i + 1).toSet();
+  }
+
+  List<_PrinterFormEntry> _parsePrintersFromRecord(
+      String? recordPrinterName, int recordPrinterCount) {
+    if (recordPrinterName == null || recordPrinterName.trim().isEmpty) {
+      return [_PrinterFormEntry()];
+    }
+    final parts = recordPrinterName.split(' + ');
+    final entries = <_PrinterFormEntry>[];
+    for (final part in parts) {
+      final cleanPart = part.trim();
+      if (cleanPart.isEmpty) continue;
+      final lower = cleanPart.toLowerCase();
+      final match = predefinedPrinters.firstWhere(
+        (p) =>
+            p.key != 'custom' &&
+            (p.printerName.toLowerCase() == lower ||
+                cleanPart.toLowerCase().contains(p.printerName.toLowerCase()) ||
+                p.displayName.toLowerCase().contains(lower)),
+        orElse: () => const PredefinedPrinter(
+          key: 'custom',
+          displayName: '+ Nueva impresora / Otra',
+          printerName: '',
+          maxCount: 100,
+        ),
+      );
+      if (match.key != 'custom') {
+        final units = _parseUnitsFromName(cleanPart, 1, match.maxCount);
+        entries.add(_PrinterFormEntry(
+          selectedKey: match.key,
+          selectedUnits: units,
+        ));
+      } else {
+        entries.add(_PrinterFormEntry(
+          selectedKey: 'custom',
+          customName: cleanPart,
+          customCount: '1',
+        ));
+      }
+    }
+    return entries.isNotEmpty ? entries : [_PrinterFormEntry()];
+  }
+
+  String requesterType = 'Estudiante';
+  late TextEditingController requesterNameController;
+  late TextEditingController requesterIdController;
+  late TextEditingController customRequesterTypeController;
+  late TextEditingController printHoursController;
+  late TextEditingController printMinutesController;
+  late TextEditingController projectNameController;
+
+  List<String> getSelectedPrinterList() {
+    final list = <String>[];
+    for (final entry in printerEntries) {
+      if (entry.selectedKey == null) continue;
+      if (entry.selectedKey == 'custom') {
+        final customName = entry.customNameController.text.trim();
+        if (customName.isEmpty) continue;
+        final count = int.tryParse(entry.customCountController.text) ?? 1;
+        final safeCount = count.clamp(1, 100);
+        if (safeCount == 1) {
+          list.add(customName);
+        } else {
+          for (int i = 1; i <= safeCount; i++) {
+            list.add('$customName (#$i)');
+          }
+        }
+      } else {
+        final p = predefinedPrinters.firstWhere(
+          (x) => x.key == entry.selectedKey,
+          orElse: () => const PredefinedPrinter(
+            key: '',
+            displayName: '',
+            printerName: '',
+          ),
+        );
+        if (p.printerName.isEmpty) continue;
+        if (p.isUnique) {
+          list.add(p.printerName);
+        } else {
+          final sortedUnits = entry.selectedUnits.toList()..sort();
+          if (sortedUnits.isEmpty) {
+            list.add(p.printerName);
+          } else {
+            for (final u in sortedUnits) {
+              list.add('${p.printerName} (Impresora #$u)');
+            }
+          }
+        }
+      }
+    }
+    return list;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -2083,11 +2599,54 @@ class _FormState extends State<PrintFormScreen> {
     }
 
     final r = widget.record;
+    _hasMaterialCombination = r?.hasMaterialCombination ?? false;
     name = TextEditingController(text: r?.pieceType ?? '');
+    projectNameController = TextEditingController(text: r?.projectName ?? '');
     notes = TextEditingController(text: r?.notes ?? '');
+    printerEntries =
+        _parsePrintersFromRecord(r?.printerName, r?.printerCount ?? 1);
+
     cantidad = r?.cantidad ?? 1;
     if (cantidad < 1) cantidad = 1;
     qtyController = TextEditingController(text: '$cantidad');
+
+    final savedReqType = r?.requesterType;
+    if (savedReqType == 'Docente' || savedReqType == 'Otro' || savedReqType == 'Estudiante') {
+      requesterType = savedReqType!;
+    } else if (savedReqType != null && savedReqType.isNotEmpty) {
+      requesterType = 'Otro';
+    } else {
+      requesterType = 'Estudiante';
+    }
+    requesterNameController =
+        TextEditingController(text: r?.requesterName ?? '');
+    requesterIdController = TextEditingController(text: r?.requesterId ?? '');
+    customRequesterTypeController = TextEditingController(
+      text: r?.customRequesterType ??
+          (savedReqType != null &&
+                  !['Estudiante', 'Docente'].contains(savedReqType)
+              ? savedReqType
+              : ''),
+    );
+
+    int initH = 0;
+    int initM = 0;
+    if (r?.printTime != null && r!.printTime!.isNotEmpty) {
+      final hMatch =
+          RegExp(r'(\d+)\s*h', caseSensitive: false).firstMatch(r.printTime!);
+      final mMatch =
+          RegExp(r'(\d+)\s*m', caseSensitive: false).firstMatch(r.printTime!);
+      if (hMatch != null) initH = int.tryParse(hMatch.group(1) ?? '0') ?? 0;
+      if (mMatch != null) initM = int.tryParse(mMatch.group(1) ?? '0') ?? 0;
+      if (hMatch == null && mMatch == null) {
+        initM =
+            int.tryParse(r.printTime!.replaceAll(RegExp(r'\D'), '')) ?? 0;
+      }
+    }
+    printHoursController =
+        TextEditingController(text: initH > 0 ? '$initH' : '');
+    printMinutesController =
+        TextEditingController(text: initM > 0 ? '$initM' : '');
 
     if (r != null) {
       final savedCategory = r.figureCategory;
@@ -2096,8 +2655,8 @@ class _FormState extends State<PrintFormScreen> {
       } else {
         category = 'Otro';
       }
-      customCategory = TextEditingController(
-          text: category == 'Otro' ? savedCategory : '');
+      customCategory =
+          TextEditingController(text: category == 'Otro' ? savedCategory : '');
     } else {
       category = null;
       customCategory = TextEditingController();
@@ -2123,15 +2682,569 @@ class _FormState extends State<PrintFormScreen> {
   @override
   void dispose() {
     name.dispose();
+    projectNameController.dispose();
     notes.dispose();
     customCategory.dispose();
     qtyController.dispose();
+    requesterNameController.dispose();
+    requesterIdController.dispose();
+    customRequesterTypeController.dispose();
+    printHoursController.dispose();
+    printMinutesController.dispose();
+    for (final entry in printerEntries) {
+      entry.dispose();
+    }
     for (final material in materials) {
       material.dispose();
     }
     if (_ownsInvVm) inventoryVm.dispose();
     super.dispose();
   }
+
+  Widget _buildRequesterPanel() => formCard(
+        title: 'Datos del Solicitante',
+        subtitle:
+            'Identificación institucional de quien solicita el servicio de impresión',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '¿Quién solicitó la impresión? *',
+              style: TextStyle(
+                color: textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 10,
+              runSpacing: 8,
+              children: [
+                _buildRequesterTypeChip('Estudiante', Icons.school_outlined),
+                _buildRequesterTypeChip('Docente', Icons.badge_outlined),
+                _buildRequesterTypeChip('Otro', Icons.person_outline),
+              ],
+            ),
+            if (requesterType == 'Otro') ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: 340,
+                child: TextField(
+                  controller: customRequesterTypeController,
+                  style: TextStyle(color: textPrimary, fontSize: 13),
+                  decoration: fieldDecoration(
+                    'Especificar tipo de solicitante *',
+                    hint: 'Ej: Investigador / Administrativo / Externo',
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 14),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth >= 560;
+                final fieldWidth = isWide
+                    ? (constraints.maxWidth - 16) / 2
+                    : constraints.maxWidth;
+                final nameFieldWidth = isWide
+                    ? (fieldWidth * 0.5)
+                    : constraints.maxWidth;
+                final idFieldWidth = isWide
+                    ? (fieldWidth * 0.25).clamp(120.0, fieldWidth)
+                    : constraints.maxWidth;
+                final idLabel = requesterType == 'Estudiante'
+                    ? 'No. de Control *'
+                    : (requesterType == 'Docente'
+                        ? 'No. de Empleado *'
+                        : 'No. de Identificación / Rol *');
+                final idHint = requesterType == 'Estudiante'
+                    ? 'Ej: 21120456'
+                    : (requesterType == 'Docente'
+                        ? 'Ej: DOC-4091'
+                        : 'Ej: EXT-012');
+                final idIcon = requesterType == 'Estudiante'
+                    ? Icons.pin_outlined
+                    : (requesterType == 'Docente'
+                        ? Icons.badge_outlined
+                        : Icons.credit_card_outlined);
+
+                return Wrap(
+                  spacing: 16,
+                  runSpacing: 12,
+                  children: [
+                    SizedBox(
+                      width: nameFieldWidth,
+                      child: TextField(
+                        controller: requesterNameController,
+                        style: TextStyle(color: textPrimary, fontSize: 13),
+                        decoration: fieldDecoration(
+                          'Nombre del solicitante *',
+                          hint: 'Ej: Juan Pérez Morales',
+                          prefix: const Icon(Icons.person_outline,
+                              size: 18, color: accentPetrol),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: idFieldWidth,
+                      child: TextField(
+                        controller: requesterIdController,
+                        style: TextStyle(color: textPrimary, fontSize: 13),
+                        decoration: fieldDecoration(
+                          idLabel,
+                          hint: idHint,
+                          prefix: Icon(idIcon, size: 18, color: accentPetrol),
+                        ).copyWith(
+                          prefixIconConstraints: const BoxConstraints(
+                            minWidth: 36,
+                            minHeight: 36,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      );
+
+  Widget _buildRequesterTypeChip(String type, IconData icon) {
+    final isSelected = requesterType == type;
+    return InkWell(
+      onTap: () => setState(() => requesterType = type),
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? accentPetrol.withValues(alpha: 0.15)
+              : surfaceElevated,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? accentPetrol : borderSubtle,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? accentPetrol : textSecondary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              type,
+              style: TextStyle(
+                color: isSelected ? textPrimary : textSecondary,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: 6),
+              const Icon(Icons.check, size: 14, color: accentPetrol),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrintTimeInput() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Tiempo total de impresión',
+          style: TextStyle(
+            color: textSecondary,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.6,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: surfaceElevated,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: borderSubtle),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Icon(Icons.schedule, size: 16, color: accentPetrol),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 36,
+                child: TextField(
+                  controller: printHoursController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(3),
+                  ],
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: '0',
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+              Text(' h  ',
+                  style: TextStyle(
+                      color: textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
+              Container(width: 1, height: 18, color: borderSubtle),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 36,
+                child: TextField(
+                  key: const ValueKey('print_minutes_field'),
+                  controller: printMinutesController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(2),
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      if (newValue.text.isEmpty) return newValue;
+                      final m = int.tryParse(newValue.text);
+                      if (m != null && m > 60) {
+                        return const TextEditingValue(
+                          text: '60',
+                          selection: TextSelection.collapsed(offset: 2),
+                        );
+                      }
+                      return newValue;
+                    }),
+                  ],
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: '0',
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                    border: InputBorder.none,
+                  ),
+                  onChanged: (val) {
+                    final m = int.tryParse(val);
+                    if (m != null && m > 60) {
+                      printMinutesController.text = '60';
+                      printMinutesController.selection =
+                          const TextSelection.collapsed(offset: 2);
+                    }
+                    setState(() {});
+                  },
+                ),
+              ),
+              Text(' min',
+                  style: TextStyle(
+                      color: textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPrinterInfoPanel() => formCard(
+        title: 'Datos de la impresora',
+        subtitle: 'Identifica la impresora o impresoras utilizadas',
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final fitsInRow = constraints.maxWidth >= 520;
+            final dropdownWidth = fitsInRow
+                ? (constraints.maxWidth * 0.58).clamp(240.0, 380.0)
+                : constraints.maxWidth;
+            final countWidth = fitsInRow ? 204.0 : constraints.maxWidth;
+
+            final allConfigured = printerEntries.isNotEmpty &&
+                printerEntries.every((e) => e.isConfigured);
+
+            return Column(
+              key: const ValueKey('printer_info_panel'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...List.generate(printerEntries.length, (entryIndex) {
+                  final entry = printerEntries[entryIndex];
+                  final selectedPrinter = predefinedPrinters.firstWhere(
+                    (p) => p.key == entry.selectedKey,
+                    orElse: () => const PredefinedPrinter(
+                      key: '',
+                      displayName: '',
+                      printerName: '',
+                      maxCount: 1,
+                    ),
+                  );
+
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom:
+                          entryIndex < printerEntries.length - 1 ? 16.0 : 0.0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: dropdownWidth,
+                              child: DropdownButtonFormField<String>(
+                                key: entryIndex == 0
+                                    ? const ValueKey('printer_select_dropdown')
+                                    : ValueKey(
+                                        'printer_select_dropdown_$entryIndex'),
+                                value: entry.selectedKey,
+                                isExpanded: true,
+                                dropdownColor: surfaceElevated,
+                                style:
+                                    TextStyle(color: textPrimary, fontSize: 13),
+                                iconEnabledColor: textSecondary,
+                                hint: Text(
+                                  printerEntries.length > 1
+                                      ? 'Selecciona otra impresora *'
+                                      : 'Selecciona una impresora *',
+                                  style: TextStyle(
+                                      color: textMuted, fontSize: 13),
+                                ),
+                                decoration: fieldDecoration(
+                                  printerEntries.length > 1
+                                      ? 'Impresora ${entryIndex + 1} *'
+                                      : 'Impresora *',
+                                ),
+                                items: predefinedPrinters
+                                    .map((p) => DropdownMenuItem(
+                                          value: p.key,
+                                          child: Text(
+                                            p.displayName,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ))
+                                    .toList(),
+                                onChanged: (val) {
+                                  setState(() {
+                                    entry.selectedKey = val;
+                                    entry.selectedUnits = {1};
+                                  });
+                                },
+                              ),
+                            ),
+                            if (printerEntries.length > 1) ...[
+                              const SizedBox(width: 8),
+                              IconButton(
+                                key: ValueKey('remove_printer_$entryIndex'),
+                                tooltip: 'Eliminar impresora',
+                                icon: Icon(
+                                  Icons.delete_outline,
+                                  size: 20,
+                                  color: semanticDanger.withOpacity(0.85),
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    final removed =
+                                        printerEntries.removeAt(entryIndex);
+                                    removed.dispose();
+                                  });
+                                },
+                              ),
+                            ],
+                          ],
+                        ),
+                        if (entry.selectedKey != null &&
+                            entry.selectedKey != 'custom' &&
+                            !selectedPrinter.isUnique) ...[
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: List.generate(
+                              selectedPrinter.maxCount,
+                              (index) {
+                                final unitNumber = index + 1;
+                                final isSelected =
+                                    entry.selectedUnits.contains(unitNumber);
+                                return InkWell(
+                                  key: ValueKey(
+                                      'printer_unit_chip_${entryIndex}_$unitNumber'),
+                                  borderRadius: BorderRadius.circular(8),
+                                  onTap: () {
+                                    setState(() {
+                                      if (isSelected) {
+                                        if (entry.selectedUnits.length > 1) {
+                                          entry.selectedUnits
+                                              .remove(unitNumber);
+                                        }
+                                      } else {
+                                        entry.selectedUnits.add(unitNumber);
+                                      }
+                                    });
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 150),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? accentPetrol
+                                          : surfaceElevated,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? accentPetrol
+                                            : borderSubtle,
+                                        width: isSelected ? 1.5 : 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          isSelected
+                                              ? Icons.check_box
+                                              : Icons.check_box_outline_blank,
+                                          size: 15,
+                                          color: isSelected
+                                              ? Colors.white
+                                              : textSecondary,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Impresora $unitNumber',
+                                          style: TextStyle(
+                                            color: isSelected
+                                                ? Colors.white
+                                                : textPrimary,
+                                            fontSize: 12,
+                                            fontWeight: isSelected
+                                                ? FontWeight.w600
+                                                : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                        if (entry.selectedKey == 'custom') ...[
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              SizedBox(
+                                width: dropdownWidth,
+                                child: TextField(
+                                  key: ValueKey('printer_name_field_$entryIndex'),
+                                  controller: entry.customNameController,
+                                  textCapitalization: TextCapitalization.words,
+                                  style: TextStyle(
+                                      color: textPrimary, fontSize: 13),
+                                  decoration: fieldDecoration(
+                                    'Nombre de la nueva impresora *',
+                                    hint: 'Ej: Prusa MK4',
+                                  ),
+                                  onChanged: (_) => setState(() {}),
+                                ),
+                              ),
+                              SizedBox(
+                                width: countWidth,
+                                child: TextField(
+                                  key: ValueKey(
+                                      'printer_count_field_$entryIndex'),
+                                  controller: entry.customCountController,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    TextInputFormatter.withFunction(
+                                        (oldValue, newValue) {
+                                      if (newValue.text.isEmpty) {
+                                        return newValue;
+                                      }
+                                      final count = int.tryParse(newValue.text);
+                                      return count != null &&
+                                              count >= 1 &&
+                                              count <= 100
+                                          ? newValue
+                                          : oldValue;
+                                    }),
+                                  ],
+                                  style: TextStyle(
+                                      color: textPrimary, fontSize: 13),
+                                  decoration: fieldDecoration(
+                                    'Número de impresoras *',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }),
+                if (allConfigured) ...[
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    key: const ValueKey('add_printer_button'),
+                    onPressed: () {
+                      setState(() {
+                        printerEntries.add(_PrinterFormEntry());
+                      });
+                    },
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text(
+                      'AGREGAR OTRA IMPRESORA',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: accentPetrol,
+                      side: const BorderSide(color: accentPetrol),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
+      );
+
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
@@ -2148,26 +3261,58 @@ class _FormState extends State<PrintFormScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: double.infinity),
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 children: [
+                  _buildRequesterPanel(),
+                  const SizedBox(height: 16),
+                  _buildPrinterInfoPanel(),
+                  const SizedBox(height: 16),
                   formCard(
                     title: 'Información de la Pieza',
-                    subtitle: 'Datos técnicos del modelo fabricado',
+                    subtitle:
+                        'Datos del proyecto, archivo 3D y tiempo de impresión',
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Nombre de la pieza a la mitad de la pantalla
+                        // Nombre del proyecto
                         LayoutBuilder(
                           builder: (context, constraints) => SizedBox(
                             width: constraints.maxWidth > 500
-                                ? constraints.maxWidth * 0.5
+                                ? constraints.maxWidth * 0.65
                                 : double.infinity,
                             child: TextField(
+                              key: const ValueKey('print_project_name_field'),
+                              controller: projectNameController,
+                              style:
+                                  TextStyle(color: textPrimary, fontSize: 13),
+                              decoration: fieldDecoration(
+                                'Nombre del proyecto *',
+                                hint: 'Ej: Brazo robótico SILM / Tesis Manufactura 2026',
+                                prefix: const Icon(Icons.folder_open_outlined,
+                                    size: 18, color: accentPetrol),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Nombre del archivo 3D
+                        LayoutBuilder(
+                          builder: (context, constraints) => SizedBox(
+                            width: constraints.maxWidth > 500
+                                ? constraints.maxWidth * 0.65
+                                : double.infinity,
+                            child: TextField(
+                              key: const ValueKey('print_piece_name_field'),
                               controller: name,
-                              style: const TextStyle(
-                                  color: textPrimary, fontSize: 13),
-                              decoration: fieldDecoration('Nombre de la pieza *',
-                                  hint: 'Ej: Engrane reductor v2'),
+                              style:
+                                  TextStyle(color: textPrimary, fontSize: 13),
+                              decoration: fieldDecoration(
+                                'Nombre del archivo *',
+                                hint: 'Ej: soporte_engrane_v2.stl / pinza_robotica.gcode',
+                                prefix: const Icon(Icons.insert_drive_file_outlined,
+                                    size: 18, color: accentPetrol),
+                              ),
                             ),
                           ),
                         ),
@@ -2177,12 +3322,13 @@ class _FormState extends State<PrintFormScreen> {
                           width: 230,
                           child: DropdownButtonFormField<String>(
                             initialValue: category,
+                            isExpanded: true,
                             dropdownColor: surfaceElevated,
-                            style: const TextStyle(
-                                color: textPrimary, fontSize: 13),
+                            style: TextStyle(color: textPrimary, fontSize: 13),
                             iconEnabledColor: textSecondary,
-                            hint: const Text('Selecciona una categoría *',
-                                style: TextStyle(color: textMuted, fontSize: 13)),
+                            hint: Text('Selecciona una categoría *',
+                                style:
+                                    TextStyle(color: textMuted, fontSize: 13)),
                             decoration: fieldDecoration('Categoría *'),
                             items: categories
                                 .map((x) =>
@@ -2197,10 +3343,10 @@ class _FormState extends State<PrintFormScreen> {
                             width: 230,
                             child: TextField(
                               controller: customCategory,
-                              style: const TextStyle(
-                                  color: textPrimary, fontSize: 13),
-                              decoration: fieldDecoration(
-                                  'Categoría personalizada *'),
+                              style:
+                                  TextStyle(color: textPrimary, fontSize: 13),
+                              decoration:
+                                  fieldDecoration('Categoría personalizada *'),
                             ),
                           ),
                         ],
@@ -2217,7 +3363,7 @@ class _FormState extends State<PrintFormScreen> {
                                 initialDate: selectedDate,
                                 builder: (context, child) => Theme(
                                   data: Theme.of(context).copyWith(
-                                    colorScheme: const ColorScheme.dark(
+                                    colorScheme: ColorScheme.dark(
                                       primary: accentPetrol,
                                       onPrimary: textPrimary,
                                       surface: surfaceCard,
@@ -2244,30 +3390,37 @@ class _FormState extends State<PrintFormScreen> {
                                   const Icon(Icons.calendar_today_outlined,
                                       size: 16, color: accentPetrol),
                                   const SizedBox(width: 10),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Text(
-                                        'Fecha de fabricación',
-                                        style: TextStyle(
-                                          color: textSecondary,
-                                          fontSize: 10,
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Fecha de fabricación',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: textSecondary,
+                                            fontSize: 10,
+                                          ),
                                         ),
-                                      ),
-                                      Text(
-                                        dateText(selectedDate
-                                            .millisecondsSinceEpoch),
-                                        style: const TextStyle(
-                                          color: textPrimary,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
+                                        Text(
+                                          dateText(selectedDate
+                                              .millisecondsSinceEpoch),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: textPrimary,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                  const Spacer(),
-                                  const Icon(Icons.edit_calendar_outlined,
+                                  const SizedBox(width: 8),
+                                  Icon(Icons.edit_calendar_outlined,
                                       size: 16, color: textSecondary),
                                 ],
                               ),
@@ -2276,9 +3429,9 @@ class _FormState extends State<PrintFormScreen> {
                         ),
                         const SizedBox(height: 14),
 
-                        // Campo "Cantidad de piezas" de tamaño máximo 2 caracteres
-                        _buildQuantityStepper(),
-                        const SizedBox(height: 10),
+                        // Tiempo total de impresión (sin campo de cantidad de piezas)
+                        _buildPrintTimeInput(),
+                        const SizedBox(height: 12),
 
                         // Resumen en vivo contenido a medida
                         ConstrainedBox(
@@ -2291,7 +3444,33 @@ class _FormState extends State<PrintFormScreen> {
                   const SizedBox(height: 16),
                   formCard(
                     title: 'Materiales Utilizados',
-                    subtitle: 'Gramos consumidos POR UNIDAD de pieza individual',
+                    subtitle:
+                        'Gramos consumidos POR UNIDAD de pieza individual',
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Combinación de material',
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Checkbox(
+                          key: const ValueKey('material_combination_toggle'),
+                          value: _hasMaterialCombination,
+                          shape: const CircleBorder(),
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          activeColor: accentPetrol,
+                          onChanged: (value) => setState(
+                            () => _hasMaterialCombination = value ?? false,
+                          ),
+                        ),
+                      ],
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -2306,10 +3485,10 @@ class _FormState extends State<PrintFormScreen> {
                           alignment: Alignment.centerLeft,
                           child: OutlinedButton.icon(
                             onPressed: () => setState(() => materials.add(
-                                  _MaterialForm(
-                                      'PLA', '', null, '', true),
+                                  _MaterialForm('PLA', '', null, '', true),
                                 )),
-                            icon: const Icon(Icons.add, size: 16, color: accentPetrol),
+                            icon: const Icon(Icons.add,
+                                size: 16, color: accentPetrol),
                             label: const Text(
                               'AGREGAR OTRO MATERIAL',
                               style: TextStyle(
@@ -2322,7 +3501,8 @@ class _FormState extends State<PrintFormScreen> {
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 16, vertical: 12),
-                              side: const BorderSide(color: accentPetrol, width: 1.2),
+                              side: const BorderSide(
+                                  color: accentPetrol, width: 1.2),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -2334,15 +3514,20 @@ class _FormState extends State<PrintFormScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  if (_hasMaterialCombination) ...[
+                    _buildMaterialCombinationCard(),
+                    const SizedBox(height: 16),
+                  ],
                   formCard(
-                    title: 'Observaciones Adicionales',
-                    subtitle: 'Parámetros de impresión, notas de calibración',
+                    title: 'Comentarios y Observaciones',
+                    subtitle: 'Notas adicionales sobre la impresión o incidencias',
                     child: TextField(
                       controller: notes,
                       minLines: 2,
                       maxLines: 4,
-                      style: const TextStyle(color: textPrimary, fontSize: 13),
-                      decoration: fieldDecoration('Notas u observaciones'),
+                      style: TextStyle(color: textPrimary, fontSize: 13),
+                      decoration: fieldDecoration('Comentarios / Observaciones',
+                          hint: 'Notas sobre el acabado, tolerancias, propósito o incidencias'),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -2360,134 +3545,14 @@ class _FormState extends State<PrintFormScreen> {
         ),
       );
 
-  Widget _buildQuantityStepper() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Cantidad de piezas *',
-            style: TextStyle(
-              color: textSecondary,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.6,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Container(
-                width: 120,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: surfaceElevated,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: borderSubtle),
-                ),
-                child: Row(
-                  children: [
-                    InkWell(
-                      onTap: () {
-                        if (cantidad > 1) {
-                          setState(() {
-                            cantidad--;
-                            qtyController.text = '$cantidad';
-                          });
-                        }
-                      },
-                      borderRadius: const BorderRadius.horizontal(
-                          left: Radius.circular(8)),
-                      child: SizedBox(
-                        width: 34,
-                        height: 40,
-                        child: Icon(
-                          Icons.remove,
-                          size: 16,
-                          color: cantidad > 1 ? textPrimary : textMuted,
-                        ),
-                      ),
-                    ),
-                    Container(width: 1, height: 22, color: borderSubtle),
-                    Expanded(
-                      child: TextField(
-                        controller: qtyController,
-                        textAlign: TextAlign.center,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(3),
-                        ],
-                        style: const TextStyle(
-                          color: textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
-                          isDense: true,
-                        ),
-                        onChanged: (val) {
-                          final parsed = int.tryParse(val);
-                          if (parsed != null && parsed >= 1) {
-                            setState(() => cantidad = parsed.clamp(1, 999));
-                          }
-                        },
-                      ),
-                    ),
-                    Container(width: 1, height: 22, color: borderSubtle),
-                    InkWell(
-                      onTap: () {
-                        if (cantidad < 999) {
-                          setState(() {
-                            cantidad++;
-                            qtyController.text = '$cantidad';
-                          });
-                        }
-                      },
-                      borderRadius: const BorderRadius.horizontal(
-                          right: Radius.circular(8)),
-                      child: const SizedBox(
-                        width: 34,
-                        height: 40,
-                        child: Icon(
-                          Icons.add,
-                          size: 16,
-                          color: textPrimary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              if (cantidad > 1)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: accentAmber.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                        color: accentAmber.withValues(alpha: 0.5)),
-                  ),
-                  child: Text(
-                    'Lote de $cantidad unidades',
-                    style: const TextStyle(
-                      color: accentAmber,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      );
+
 
   Widget _buildLiveConsumptionSummary() {
+    final printerList = getSelectedPrinterList();
+    final printerCount = printerList.isEmpty ? 1 : printerList.length;
     final unitGrams = materials.fold(
         0.0, (s, m) => s + (double.tryParse(m.grams.text) ?? 0.0));
-    final totalGrams = unitGrams * cantidad;
+    final totalGrams = unitGrams * printerCount;
 
     if (unitGrams <= 0) {
       return Container(
@@ -2498,10 +3563,10 @@ class _FormState extends State<PrintFormScreen> {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: borderSubtle),
         ),
-        child: const Row(
+        child: Row(
           children: [
             Icon(Icons.scale_outlined, size: 16, color: textMuted),
-            SizedBox(width: 10),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 'Ingresa los gramos de material para calcular el consumo total',
@@ -2514,20 +3579,20 @@ class _FormState extends State<PrintFormScreen> {
     }
 
     final String originText;
-    if (cantidad > 1) {
+    if (printerCount > 1) {
       if (materials.length > 1) {
         originText =
-            'Origen: ${unitGrams.toStringAsFixed(1)} g por pieza (${materials.length} materiales) × $cantidad piezas';
+            'Origen: ${unitGrams.toStringAsFixed(1)} g por impresión (${materials.length} materiales) × $printerCount impresoras';
       } else {
         originText =
-            'Origen: ${unitGrams.toStringAsFixed(1)} g por pieza × $cantidad piezas';
+            'Origen: ${unitGrams.toStringAsFixed(1)} g por impresión × $printerCount impresoras';
       }
     } else {
       if (materials.length > 1) {
         originText =
-            'Origen: ${unitGrams.toStringAsFixed(1)} g sumando ${materials.length} materiales para 1 pieza';
+            'Origen: ${unitGrams.toStringAsFixed(1)} g sumando ${materials.length} materiales para 1 impresión';
       } else {
-        originText = 'Origen: peso unitario de 1 pieza';
+        originText = 'Origen: peso unitario de 1 impresión';
       }
     }
 
@@ -2547,8 +3612,8 @@ class _FormState extends State<PrintFormScreen> {
               color: accentPetrol.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: const Icon(Icons.scale_outlined,
-                size: 16, color: accentPetrol),
+            child:
+                const Icon(Icons.scale_outlined, size: 16, color: accentPetrol),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -2559,10 +3624,10 @@ class _FormState extends State<PrintFormScreen> {
                 Row(
                   children: [
                     Text(
-                      cantidad > 1
-                          ? 'Consumo total del lote: '
-                          : 'Consumo total de la pieza: ',
-                      style: const TextStyle(
+                      printerCount > 1
+                          ? 'Consumo total ($printerCount impresoras): '
+                          : 'Consumo total: ',
+                      style: TextStyle(
                         color: textSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -2570,7 +3635,7 @@ class _FormState extends State<PrintFormScreen> {
                     ),
                     Text(
                       '${totalGrams.toStringAsFixed(1)} g',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -2581,7 +3646,7 @@ class _FormState extends State<PrintFormScreen> {
                 const SizedBox(height: 2),
                 Text(
                   originText,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: textMuted,
                     fontSize: 11,
                   ),
@@ -2594,10 +3659,189 @@ class _FormState extends State<PrintFormScreen> {
     );
   }
 
+  Widget _buildMaterialCombinationCard() {
+    final printerList = getSelectedPrinterList();
+    final printerCount = printerList.isEmpty ? 1 : printerList.length;
+    final unitGrams = materials.fold(
+      0.0,
+      (sum, material) => sum + (double.tryParse(material.grams.text) ?? 0.0),
+    );
+    final totalBatchGrams = unitGrams * printerCount;
+    final rows = materials.map((material) {
+      final materialName =
+          material.type == 'Otro' ? material.customType.trim() : material.type;
+      final grams = double.tryParse(material.grams.text) ?? 0.0;
+      return TableRow(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            child: Text(
+              materialName.isEmpty ? 'Sin especificar' : materialName,
+              style: TextStyle(color: textPrimary, fontSize: 12),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            child: Row(
+              children: [
+                if (material.color != null)
+                  colorSwatchCircle(Color(material.color!), size: 12)
+                else
+                  Icon(Icons.circle_outlined, size: 12, color: textMuted),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    material.colorName.isEmpty
+                        ? 'Sin seleccionar'
+                        : material.colorName,
+                    style: TextStyle(
+                      color:
+                          material.colorName.isEmpty ? textMuted : textPrimary,
+                      fontSize: 12,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            child: Text(
+              '${grams.toStringAsFixed(1)} g',
+              textAlign: TextAlign.right,
+              style: TextStyle(color: textPrimary, fontSize: 12),
+            ),
+          ),
+        ],
+      );
+    }).toList();
+
+    return KeyedSubtree(
+      key: const ValueKey('material_combination_card'),
+      child: formCard(
+        title: 'Combinación de material y colores',
+        subtitle: 'Materiales, colores y gramos consumidos',
+        child: Table(
+          columnWidths: const {
+            0: FlexColumnWidth(1),
+            1: FlexColumnWidth(1.5),
+            2: FlexColumnWidth(0.9),
+          },
+          border: TableBorder(
+            horizontalInside: BorderSide(color: borderSubtle),
+            bottom: BorderSide(color: borderSubtle),
+          ),
+          children: [
+            TableRow(
+              decoration: BoxDecoration(color: surfaceElevated),
+              children: [
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                  child: Text(
+                    'MATERIAL',
+                    style: TextStyle(
+                      color: textSecondary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                  child: Text(
+                    'COLOR',
+                    style: TextStyle(
+                      color: textSecondary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                  child: Text(
+                    'GRAMOS',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: textSecondary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            ...rows,
+            TableRow(
+              decoration: BoxDecoration(
+                color: accentPetrol.withValues(alpha: 0.08),
+              ),
+              children: [
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                  child: Text(
+                    'TOTAL USADO',
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                  child: Text(
+                    printerCount == 1 ? '1 impresión' : '$printerCount impresoras',
+                    style: TextStyle(color: textSecondary, fontSize: 11),
+                  ),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${unitGrams.toStringAsFixed(1)} g / pieza',
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                          color: accentPetrol,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (printerCount > 1)
+                        Text(
+                          'Total: ${totalBatchGrams.toStringAsFixed(1)} g',
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            color: textSecondary,
+                            fontSize: 10,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _materialCard(int index, _MaterialForm m) {
     final effectiveType = m.type == 'Otro' ? m.customType : m.type;
     final enteredUnitGrams = double.tryParse(m.grams.text) ?? 0.0;
-    final totalBatchGrams = enteredUnitGrams * cantidad;
+    final printerList = getSelectedPrinterList();
+    final printerCount = printerList.isEmpty ? 1 : printerList.length;
+    final totalBatchGrams = enteredUnitGrams * printerCount;
     final currentStock = inventoryVm.getAvailableStock(
       effectiveType,
       colorName: m.colorName.isEmpty ? null : m.colorName,
@@ -2630,7 +3874,7 @@ class _FormState extends State<PrintFormScreen> {
             children: [
               Text(
                 'MATERIAL ${index + 1}',
-                style: const TextStyle(
+                style: TextStyle(
                   color: textSecondary,
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
@@ -2661,8 +3905,9 @@ class _FormState extends State<PrintFormScreen> {
                 child: DropdownButtonFormField<String>(
                   key: ValueKey('type_${index}_${m.type}'),
                   initialValue: types.contains(m.type) ? m.type : 'Otro',
+                  isExpanded: true,
                   dropdownColor: surfaceElevated,
-                  style: const TextStyle(color: textPrimary, fontSize: 13),
+                  style: TextStyle(color: textPrimary, fontSize: 13),
                   iconEnabledColor: textSecondary,
                   decoration: fieldDecoration('Tipo *'),
                   items: types
@@ -2677,10 +3922,11 @@ class _FormState extends State<PrintFormScreen> {
                 child: DropdownButtonFormField<int?>(
                   key: ValueKey('color_${index}_${m.color}_${m.colorName}'),
                   initialValue: dropdownColorValue,
+                  isExpanded: true,
                   dropdownColor: surfaceElevated,
-                  style: const TextStyle(color: textPrimary, fontSize: 13),
+                  style: TextStyle(color: textPrimary, fontSize: 13),
                   iconEnabledColor: textSecondary,
-                  hint: const Text(
+                  hint: Text(
                     'Seleccionar...',
                     style: TextStyle(color: textMuted, fontSize: 13),
                   ),
@@ -2758,6 +4004,7 @@ class _FormState extends State<PrintFormScreen> {
               SizedBox(
                 width: 80,
                 child: TextField(
+                  key: ValueKey('material_grams_$index'),
                   controller: m.grams,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
@@ -2765,9 +4012,10 @@ class _FormState extends State<PrintFormScreen> {
                     LengthLimitingTextInputFormatter(4),
                   ],
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: textPrimary, fontSize: 13),
-                  decoration: fieldDecoration('Gramos *', hint: '0')
-                      .copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12)),
+                  style: TextStyle(color: textPrimary, fontSize: 13),
+                  decoration: fieldDecoration('Gramos *', hint: '0').copyWith(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 12)),
                   onChanged: (_) => setState(() {}),
                 ),
               ),
@@ -2780,7 +4028,7 @@ class _FormState extends State<PrintFormScreen> {
               child: TextField(
                 decoration:
                     fieldDecoration('Nombre del material personalizado *'),
-                style: const TextStyle(color: textPrimary, fontSize: 13),
+                style: TextStyle(color: textPrimary, fontSize: 13),
                 onChanged: (x) => setState(() => m.customType = x),
               ),
             ),
@@ -2813,8 +4061,8 @@ class _FormState extends State<PrintFormScreen> {
                   child: Text(
                     m.color == null && m.colorName.isEmpty
                         ? 'Selecciona un color para consultar el stock disponible'
-                        : (cantidad > 1 && enteredUnitGrams > 0
-                            ? 'Stock: ${currentStock.toStringAsFixed(1)} g · Lote: ${totalBatchGrams.toStringAsFixed(1)} g (${enteredUnitGrams.toStringAsFixed(1)}g × $cantidad)'
+                        : (printerCount > 1 && enteredUnitGrams > 0
+                            ? 'Stock: ${currentStock.toStringAsFixed(1)} g · Total ($printerCount imp): ${totalBatchGrams.toStringAsFixed(1)} g (${enteredUnitGrams.toStringAsFixed(1)}g × $printerCount)'
                             : 'Stock disponible: ${currentStock.toStringAsFixed(1)} g'),
                     style: TextStyle(
                       color: currentStock > 0
@@ -2850,10 +4098,84 @@ class _FormState extends State<PrintFormScreen> {
 
   Future<void> _save() async {
     if (_saving) return;
-    if (name.text.trim().isEmpty) {
-      toast(context, 'Falta el nombre de la pieza', isError: true);
+    final reqName = requesterNameController.text.trim();
+    if (reqName.isEmpty) {
+      toast(context, 'Falta el nombre de quien solicitó la impresión',
+          isError: true);
       return;
     }
+    if (requesterType == 'Otro' &&
+        customRequesterTypeController.text.trim().isEmpty) {
+      toast(context, 'Especifica el tipo de solicitante', isError: true);
+      return;
+    }
+    final reqId = requesterIdController.text.trim();
+    if (reqId.isEmpty) {
+      if (requesterType == 'Estudiante') {
+        toast(context, 'Falta el No. de Control del estudiante', isError: true);
+      } else if (requesterType == 'Docente') {
+        toast(context, 'Falta el No. de Empleado del docente', isError: true);
+      } else {
+        toast(context, 'Falta el número de identificación del solicitante',
+            isError: true);
+      }
+      return;
+    }
+    final projName = projectNameController.text.trim();
+    if (projName.isEmpty) {
+      toast(context, 'Falta el nombre del proyecto', isError: true);
+      return;
+    }
+    final fileName = name.text.trim();
+    if (fileName.isEmpty) {
+      toast(context, 'Falta el nombre del archivo', isError: true);
+      return;
+    }
+    final h = int.tryParse(printHoursController.text.trim()) ?? 0;
+    final m = int.tryParse(printMinutesController.text.trim()) ?? 0;
+    if (m > 60) {
+      toast(context, 'Los minutos no pueden ser mayores a 60', isError: true);
+      return;
+    }
+    String? formattedPrintTime;
+    if (h > 0 || m > 0) {
+      if (h > 0 && m > 0) {
+        formattedPrintTime = '${h}h ${m}m';
+      } else if (h > 0) {
+        formattedPrintTime = '${h}h';
+      } else {
+        formattedPrintTime = '${m}m';
+      }
+    }
+
+    for (int i = 0; i < printerEntries.length; i++) {
+      final entry = printerEntries[i];
+      if (entry.selectedKey == null) {
+        toast(
+          context,
+          printerEntries.length > 1
+              ? 'Selecciona la impresora #${i + 1}'
+              : 'Selecciona una impresora',
+          isError: true,
+        );
+        return;
+      }
+      if (entry.selectedKey == 'custom') {
+        final customName = entry.customNameController.text.trim();
+        if (customName.isEmpty) {
+          toast(context, 'Falta el nombre de la nueva impresora',
+              isError: true);
+          return;
+        }
+      }
+    }
+
+    final printerList = getSelectedPrinterList();
+    if (printerList.isEmpty) {
+      toast(context, 'Selecciona al menos una impresora', isError: true);
+      return;
+    }
+
     if (category == null || category!.isEmpty) {
       toast(context, 'Selecciona una categoría para la pieza', isError: true);
       return;
@@ -2865,6 +4187,7 @@ class _FormState extends State<PrintFormScreen> {
       return;
     }
 
+    final totalPrinters = printerList.length;
     final result = <MaterialData>[];
     bool hasOverStock = false;
     final overStockDetails = <String>[];
@@ -2884,7 +4207,7 @@ class _FormState extends State<PrintFormScreen> {
       if (g <= 0) {
         toast(
           context,
-          'Ingresa los gramos consumidos por pieza para $type (debe ser mayor a 0)',
+          'Ingresa los gramos consumidos por impresión para $type (debe ser mayor a 0)',
           isError: true,
         );
         return;
@@ -2894,16 +4217,16 @@ class _FormState extends State<PrintFormScreen> {
         colorName: m.colorName.isEmpty ? null : m.colorName,
         colorValue: m.color,
       );
-      final totalBatch = g * cantidad;
+      final totalBatch = g * (widget.record != null ? 1 : totalPrinters);
       if (totalBatch > avail && avail > 0) {
         hasOverStock = true;
         overStockDetails.add(
-            '$type (${m.colorName.isNotEmpty ? m.colorName : 'Color'}): requiere ${totalBatch.toStringAsFixed(1)}g ($g g × $cantidad) pero solo hay ${avail.toStringAsFixed(1)}g en inventario');
+            '$type (${m.colorName.isNotEmpty ? m.colorName : 'Color'}): requiere ${totalBatch.toStringAsFixed(1)}g ($g g × $totalPrinters ${totalPrinters == 1 ? 'impresora' : 'impresoras'}) pero solo hay ${avail.toStringAsFixed(1)}g en inventario');
       }
 
       result.add(MaterialData(
         type: type,
-        grams: g, // Gramos POR UNIDAD
+        grams: g,
         color: m.color ?? 0xFF808080,
         colorName: m.colorName.isEmpty ? null : m.colorName,
         combine: m.combine,
@@ -2917,13 +4240,13 @@ class _FormState extends State<PrintFormScreen> {
           backgroundColor: surfaceCard,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: borderSubtle),
+            side: BorderSide(color: borderSubtle),
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.warning_amber_rounded,
+              const Icon(Icons.warning_amber_rounded,
                   color: semanticWarning, size: 22),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
                 'Stock insuficiente',
                 style: TextStyle(
@@ -2938,8 +4261,8 @@ class _FormState extends State<PrintFormScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Los gramos requeridos para el lote superan el stock en inventario:',
+              Text(
+                'Los gramos requeridos superan el stock en inventario:',
                 style: TextStyle(color: textSecondary, fontSize: 13),
               ),
               const SizedBox(height: 8),
@@ -2952,15 +4275,14 @@ class _FormState extends State<PrintFormScreen> {
                             fontWeight: FontWeight.w600)),
                   )),
               const SizedBox(height: 12),
-              const Text('¿Deseas guardar de todos modos?',
+              Text('¿Deseas guardar de todos modos?',
                   style: TextStyle(color: textPrimary, fontSize: 13)),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dlgCtx, false),
-              child: const Text('Cancelar',
-                  style: TextStyle(color: textSecondary)),
+              child: Text('Cancelar', style: TextStyle(color: textSecondary)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(dlgCtx, true),
@@ -2978,8 +4300,8 @@ class _FormState extends State<PrintFormScreen> {
 
     setState(() => _saving = true);
     try {
-      // En modo edición: restituir primero el consumo anterior del lote (gramos × cantidad anterior)
       if (widget.record != null) {
+        // En modo edición: restituir primero el consumo anterior
         final oldQty = widget.record!.cantidad;
         for (final oldM in widget.record!.materials) {
           await inventoryVm.restoreGrams(
@@ -2989,48 +4311,117 @@ class _FormState extends State<PrintFormScreen> {
             colorValue: oldM.color,
           );
         }
-      }
 
-      // Descontar nuevo consumo del lote (gramos × cantidad nueva)
-      bool hasLowStockAlert = false;
-      for (final newM in result) {
-        final isLow = await inventoryVm.deductGrams(
-          newM.type,
-          newM.grams * cantidad,
-          colorName: newM.colorName,
-          colorValue: newM.color,
-        );
-        if (isLow) hasLowStockAlert = true;
-      }
+        // Descontar nuevo consumo (1 registro en edición)
+        bool hasLowStockAlert = false;
+        for (final newM in result) {
+          final isLow = await inventoryVm.deductGrams(
+            newM.type,
+            newM.grams,
+            colorName: newM.colorName,
+            colorValue: newM.color,
+          );
+          if (isLow) hasLowStockAlert = true;
+        }
 
-      await widget.vm.saveRecord(PrintRecord(
-        id: widget.record?.id ?? 0,
-        pieceType: name.text.trim(),
-        figureCategory: finalCategory,
-        date: selectedDate.millisecondsSinceEpoch,
-        materials: result,
-        notes: notes.text.trim().isEmpty ? null : notes.text.trim(),
-        cantidad: cantidad,
-      ));
+        await widget.vm.saveRecord(PrintRecord(
+          id: widget.record!.id,
+          pieceType: fileName,
+          projectName: projName,
+          figureCategory: finalCategory,
+          date: selectedDate.millisecondsSinceEpoch,
+          materials: result,
+          notes: notes.text.trim().isEmpty ? null : notes.text.trim(),
+          printerName: printerList.first,
+          printerCount: 1,
+          hasMaterialCombination: _hasMaterialCombination,
+          cantidad: 1,
+          requesterType: requesterType,
+          requesterName: reqName,
+          requesterId: reqId,
+          customRequesterType: requesterType == 'Otro'
+              ? customRequesterTypeController.text.trim()
+              : null,
+          printTime: formattedPrintTime,
+        ));
 
-      if (!mounted) return;
-      if (hasLowStockAlert) {
-        toast(
-          context,
-          'Registro guardado ($cantidad ${cantidad == 1 ? 'pieza' : 'piezas'}). ¡Alerta: filamento con stock bajo (≤ 20%)!',
-          isError: true,
-        );
+        if (!mounted) return;
+        if (hasLowStockAlert) {
+          toast(
+            context,
+            'Registro actualizado. ¡Alerta: filamento con stock bajo (≤ 20%)!',
+            isError: true,
+          );
+        } else {
+          toast(context, 'Registro de impresión actualizado correctamente');
+        }
+        Navigator.pop(context);
       } else {
-        toast(context,
-            'Registro guardado ($cantidad ${cantidad == 1 ? 'pieza' : 'piezas'}) y filamento descontado');
+        // Modo nuevo registro: si hay varias impresoras, se crean varios registros independientes
+        bool hasLowStockAlert = false;
+        for (final newM in result) {
+          final isLow = await inventoryVm.deductGrams(
+            newM.type,
+            newM.grams * totalPrinters,
+            colorName: newM.colorName,
+            colorValue: newM.color,
+          );
+          if (isLow) hasLowStockAlert = true;
+        }
+
+        for (final singlePrinter in printerList) {
+          await widget.vm.saveRecord(PrintRecord(
+            id: 0,
+            pieceType: fileName,
+            projectName: projName,
+            figureCategory: finalCategory,
+            date: selectedDate.millisecondsSinceEpoch,
+            materials: result,
+            notes: notes.text.trim().isEmpty ? null : notes.text.trim(),
+            printerName: singlePrinter,
+            printerCount: 1,
+            hasMaterialCombination: _hasMaterialCombination,
+            cantidad: 1,
+            requesterType: requesterType,
+            requesterName: reqName,
+            requesterId: reqId,
+            customRequesterType: requesterType == 'Otro'
+                ? customRequesterTypeController.text.trim()
+                : null,
+            printTime: formattedPrintTime,
+          ));
+        }
+
+        if (!mounted) return;
+        if (totalPrinters == 1) {
+          if (hasLowStockAlert) {
+            toast(
+              context,
+              'Registro guardado. ¡Alerta: filamento con stock bajo (≤ 20%)!',
+              isError: true,
+            );
+          } else {
+            toast(context, 'Registro de impresión guardado exitosamente');
+          }
+        } else {
+          if (hasLowStockAlert) {
+            toast(
+              context,
+              'Se generaron $totalPrinters registros de impresión (1 por impresora). ¡Alerta: filamento con stock bajo (≤ 20%)!',
+              isError: true,
+            );
+          } else {
+            toast(context,
+                'Se generaron $totalPrinters registros de impresión independientes exitosamente');
+          }
+        }
+        Navigator.pop(context);
       }
-      Navigator.pop(context);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 }
-
 
 class _MaterialForm {
   String type, customType, colorName;
@@ -3136,8 +4527,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
       final latestMonth = DateTime(latest.year, latest.month, 1);
       if (latestMonth.isAfter(end)) end = latestMonth;
 
-      final monthDiff =
-          (end.year - start.year) * 12 + end.month - start.month;
+      final monthDiff = (end.year - start.year) * 12 + end.month - start.month;
       if (_selectedPeriod == '3M' && monthDiff < 2) {
         start = DateTime(end.year, end.month - 2, 1);
       } else if (_selectedPeriod == '6M' && monthDiff < 5) {
@@ -3258,8 +4648,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
             materialMap[matKey] =
                 (materialMap[matKey] ?? 0.0) + (m.grams * r.cantidad);
 
-            final colObj =
-                findVoxelColor(value: m.color, name: m.colorName);
+            final colObj = findVoxelColor(value: m.color, name: m.colorName);
             colorMap[colObj.name] =
                 (colorMap[colObj.name] ?? 0.0) + (m.grams * r.cantidad);
           }
@@ -3272,13 +4661,47 @@ class _AnalyticsState extends State<AnalyticsScreen> {
             ? 0.0
             : (displayedPieces / displayedRecords.length);
 
+        // Valor económico estimado del material consumido
+        final pricePerGramByMat = <String, double>{};
+        for (final item in inventoryItems) {
+          if (item.costPerGram > 0) {
+            pricePerGramByMat[item.material.trim().toUpperCase()] =
+                item.costPerGram;
+          }
+        }
+        final allCosts = inventoryItems
+            .where((i) => i.costPerGram > 0)
+            .map((i) => i.costPerGram);
+        final avgCostRate = allCosts.isNotEmpty
+            ? (allCosts.reduce((a, b) => a + b) / allCosts.length)
+            : 0.40;
+
+        double estimatedMaterialCost = 0.0;
+        for (final r in displayedRecords) {
+          for (final m in r.materials) {
+            final rate =
+                pricePerGramByMat[m.type.trim().toUpperCase()] ?? avgCostRate;
+            estimatedMaterialCost += (m.grams * r.cantidad) * rate;
+          }
+        }
+
+        String topMaterialStr = 'Sin datos';
+        if (materialMap.isNotEmpty) {
+          final sortedMats = materialMap.entries.toList()
+            ..sort((a, b) => b.value.compareTo(a.value));
+          final topMat = sortedMats.first;
+          final pct = displayedGrams > 0
+              ? (topMat.value / displayedGrams * 100).round()
+              : 0;
+          topMaterialStr = '${topMat.key} ($pct%)';
+        }
+
         return Scaffold(
           appBar: darkAppBar(
             'ANÁLISIS DE PRODUCCIÓN',
             widget.onToggleMenu ?? () => goBack(context),
-            leadingWidget: widget.onToggleMenu != null
-                ? const SidebarToggleIcon()
-                : null,
+            leadingWidget:
+                widget.onToggleMenu != null ? const SidebarToggleIcon() : null,
             leadingIcon: Icons.arrow_back,
             onHoverEnter: widget.onHoverMenu,
             hideLeading: widget.isPinned,
@@ -3302,149 +4725,228 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
+              Tooltip(
+                message: 'Exportar informe',
+                child: IconButton(
+                  icon: const Icon(Icons.file_download_outlined, size: 20),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ExportScreen(
+                          vm: vm,
+                          inventoryVm: widget.inventoryVm,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
               const SizedBox(width: 14),
             ],
           ),
           backgroundColor: bgBase,
-          body: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1300),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                children: [
-                  // 1. CARDS OPERATIVAS COMPACTAS (Carretes, Modelos y Stock)
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isNarrow = constraints.maxWidth < 700;
-                      final cardWidth = isNarrow
-                          ? (constraints.maxWidth - 12) / 2
-                          : (constraints.maxWidth - 36) / 4;
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            children: [
+              // 1. CARDS OPERATIVAS COMPACTAS
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final columns = constraints.maxWidth >= 1060
+                      ? 4
+                      : constraints.maxWidth >= 560
+                          ? 2
+                          : 1;
+                  final cardWidth =
+                      (constraints.maxWidth - (12 * (columns - 1))) / columns;
 
-                      return Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          SizedBox(
-                            width: cardWidth,
-                            child: _kpiCard(
-                              title: 'CARRETES CONSUMIDOS',
-                              value: '${spoolsUsed.toStringAsFixed(1)} carretes',
-                              icon: Icons.album_outlined,
-                              iconColor: accentPetrol,
-                            ),
-                          ),
-                          SizedBox(
-                            width: cardWidth,
-                            child: _kpiCard(
-                              title: 'MODELOS ÚNICOS',
-                              value: '${pieceMap.length} diseños',
-                              icon: Icons.view_in_ar_rounded,
-                              iconColor: const Color(0xFF0071E3),
-                            ),
-                          ),
-                          SizedBox(
-                            width: cardWidth,
-                            child: _kpiCard(
-                              title: 'PROMEDIO POR LOTE',
-                              value: '${lotAvg.toStringAsFixed(1)} uds/orden',
-                              icon: Icons.layers_rounded,
-                              iconColor: const Color(0xFFFF9500),
-                            ),
-                          ),
-                          SizedBox(
-                            width: cardWidth,
-                            child: _kpiCard(
-                              title: 'CARRETES EN STOCK',
-                              value: widget.inventoryVm != null
-                                  ? '${spoolsInStock.toStringAsFixed(1)} disp.'
-                                  : 'N/A',
-                              icon: Icons.inventory_2_rounded,
-                              iconColor: const Color(0xFF5856D6),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 18),
-
-                  // 2. SECCIÓN PRINCIPAL: GRÁFICA INTELIGENTE + CATEGORÍAS
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isSingleColumn = constraints.maxWidth < 950;
-                      if (isSingleColumn) {
-                        return Column(
-                          children: [
-                            _buildEvolutionCard(monthlyPoints),
-                            const SizedBox(height: 16),
-                            _buildCategoryCard(categoryMap, displayedGrams),
-                          ],
-                        );
-                      }
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 5,
-                            child: _buildEvolutionCard(monthlyPoints),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            flex: 3,
-                            child:
-                                _buildCategoryCard(categoryMap, displayedGrams),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 18),
-
-                  // 3. SECCIÓN SECUNDARIA: TOP PIEZAS + DESGLOSE CROMÁTICO
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isSingleColumn = constraints.maxWidth < 950;
-                      if (isSingleColumn) {
-                        return Column(
-                          children: [
-                            _buildTopPiecesCard(topPieces, displayedGrams),
-                            const SizedBox(height: 16),
-                            _buildMaterialAndColorCard(
-                              materialMap,
-                              colorMap,
-                              displayedGrams,
-                              inventoryItems,
-                            ),
-                          ],
-                        );
-                      }
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 1,
-                            child:
-                                _buildTopPiecesCard(topPieces, displayedGrams),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            flex: 1,
-                            child: _buildMaterialAndColorCard(
-                              materialMap,
-                              colorMap,
-                              displayedGrams,
-                              inventoryItems,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
+                  return Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      SizedBox(
+                        width: cardWidth,
+                        child: _kpiCard(
+                          title: 'MATERIAL CONSUMIDO',
+                          value:
+                              '${(displayedGrams / 1000.0).toStringAsFixed(2)} kg',
+                          subtitle:
+                              '${spoolsUsed.toStringAsFixed(1)} carretes est.',
+                          icon: Icons.album_outlined,
+                          iconColor: accentPetrol,
+                        ),
+                      ),
+                      SizedBox(
+                        width: cardWidth,
+                        child: _kpiCard(
+                          title: 'PIEZAS FABRICADAS',
+                          value: '$displayedPieces piezas',
+                          subtitle:
+                              '${displayedRecords.length} trabajos/órdenes',
+                          icon: Icons.precision_manufacturing_outlined,
+                          iconColor: const Color(0xFF0071E3),
+                        ),
+                      ),
+                      SizedBox(
+                        width: cardWidth,
+                        child: _kpiCard(
+                          title: 'VALOR EN MATERIAL',
+                          value:
+                              '\$${estimatedMaterialCost.toStringAsFixed(0)}',
+                          subtitle: '${materialMap.length} plásticos usados',
+                          icon: Icons.payments_outlined,
+                          iconColor: const Color(0xFF34C759),
+                        ),
+                      ),
+                      SizedBox(
+                        width: cardWidth,
+                        child: _kpiCard(
+                          title: 'MATERIAL MÁS USADO',
+                          value: topMaterialStr,
+                          subtitle: '${colorMap.length} colores aplicados',
+                          icon: Icons.star_rounded,
+                          iconColor: const Color(0xFFFF9500),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
-            ),
+
+              if (_selectedMonthKey != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0071E3).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFF0071E3).withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.filter_alt_outlined,
+                          size: 16, color: Color(0xFF0071E3)),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Detalle mensual: $_selectedMonthKey',
+                        style: const TextStyle(
+                          color: Color(0xFF0071E3),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const Spacer(),
+                      InkWell(
+                        onTap: () => setState(() => _selectedMonthKey = null),
+                        borderRadius: BorderRadius.circular(4),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Quitar filtro',
+                                style: TextStyle(
+                                  color: textSecondary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(Icons.close, size: 14, color: textSecondary),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 18),
+
+              // 2. SECCIÓN PRINCIPAL: GRÁFICA INTELIGENTE + CATEGORÍAS
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isSingleColumn = constraints.maxWidth < 950;
+                  if (isSingleColumn) {
+                    return Column(
+                      children: [
+                        _buildEvolutionCard(monthlyPoints),
+                        const SizedBox(height: 16),
+                        _buildCategoryCard(categoryMap, displayedGrams),
+                      ],
+                    );
+                  }
+                  return IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          flex: 5,
+                          child: _buildEvolutionCard(monthlyPoints),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 3,
+                          child: _buildCategoryCard(
+                            categoryMap,
+                            displayedGrams,
+                            fillHeight: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 18),
+
+              // 3. SECCIÓN SECUNDARIA: TOP PIEZAS + DESGLOSE CROMÁTICO
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isSingleColumn = constraints.maxWidth < 950;
+                  if (isSingleColumn) {
+                    return Column(
+                      children: [
+                        _buildTopPiecesCard(topPieces, displayedGrams),
+                        const SizedBox(height: 16),
+                        _buildMaterialAndColorCard(
+                          materialMap,
+                          colorMap,
+                          displayedGrams,
+                          inventoryItems,
+                        ),
+                      ],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: _buildTopPiecesCard(topPieces, displayedGrams),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 1,
+                        child: _buildMaterialAndColorCard(
+                          materialMap,
+                          colorMap,
+                          displayedGrams,
+                          inventoryItems,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
           ),
         );
       },
@@ -3495,6 +4997,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
   Widget _kpiCard({
     required String title,
     required String value,
+    String? subtitle,
     required IconData icon,
     required Color iconColor,
   }) {
@@ -3511,13 +5014,17 @@ class _AnalyticsState extends State<AnalyticsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: textSecondary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
                 ),
               ),
               Container(
@@ -3531,15 +5038,34 @@ class _AnalyticsState extends State<AnalyticsScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              color: textPrimary,
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+              ),
             ),
           ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 3),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ],
       ),
     );
@@ -3555,13 +5081,13 @@ class _AnalyticsState extends State<AnalyticsScreen> {
         values.isEmpty ? 1.0 : values.reduce((a, b) => a > b ? a : b);
     final totalVal = values.fold(0.0, (s, v) => s + v);
     final activeMonths = values.where((v) => v > 0).length;
-    final avgVal =
-        activeMonths > 0 ? (totalVal / activeMonths) : 0.0;
+    final avgVal = activeMonths > 0 ? (totalVal / activeMonths) : 0.0;
 
     final unitLabel = _metricIndex == 0 ? 'g' : 'piezas';
     final accent = _metricIndex == 0 ? chartPrimary : const Color(0xFF0071E3);
 
     return Container(
+      key: const ValueKey('analytics_evolution_card'),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: surfaceCard,
@@ -3575,15 +5101,29 @@ class _AnalyticsState extends State<AnalyticsScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Expanded(
-                child: Text(
-                  'TENDENCIA DE FABRICACIÓN',
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.8,
-                  ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'TENDENCIA DE FABRICACIÓN',
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Toca un mes para ver su detalle',
+                      style: TextStyle(
+                        color: textMuted,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               // Selector Toggle Gramos / Piezas
@@ -3619,8 +5159,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
           Row(
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
@@ -3637,7 +5176,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
               const SizedBox(width: 8),
               Text(
                 '· Media activa: ${avgVal.toStringAsFixed(1)} $unitLabel/mes',
-                style: const TextStyle(
+                style: TextStyle(
                   color: textSecondary,
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
@@ -3649,11 +5188,13 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                   onTap: () => setState(() => _selectedMonthKey = null),
                   borderRadius: BorderRadius.circular(6),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: accentPetrol.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: accentPetrol.withValues(alpha: 0.4)),
+                      border: Border.all(
+                          color: accentPetrol.withValues(alpha: 0.4)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -3696,7 +5237,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                         val >= 1000
                             ? '${(val / 1000).toStringAsFixed(1)}k'
                             : val.toStringAsFixed(val % 1 == 0 ? 0 : 1),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: textMuted,
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
@@ -3712,8 +5253,8 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final count = points.isEmpty ? 1 : points.length;
-                      final barWidth =
-                          (constraints.maxWidth / count * 0.55).clamp(24.0, 48.0);
+                      final barWidth = (constraints.maxWidth / count * 0.55)
+                          .clamp(24.0, 48.0);
                       final chartH = constraints.maxHeight - 26;
 
                       // Posición de la línea de promedio
@@ -3773,10 +5314,10 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                                 return Expanded(
                                   child: MouseRegion(
                                     cursor: SystemMouseCursors.click,
-                                    onEnter: (_) => setState(
-                                        () => _hoveredBarIndex = idx),
-                                    onExit: (_) => setState(
-                                        () => _hoveredBarIndex = null),
+                                    onEnter: (_) =>
+                                        setState(() => _hoveredBarIndex = idx),
+                                    onExit: (_) =>
+                                        setState(() => _hoveredBarIndex = null),
                                     child: GestureDetector(
                                       behavior: HitTestBehavior.opaque,
                                       onTap: () {
@@ -3809,34 +5350,43 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                                                   decoration: BoxDecoration(
                                                     color: isZero
                                                         ? borderSubtle
-                                                            .withValues(alpha: 0.5)
+                                                            .withValues(
+                                                                alpha: 0.5)
                                                         : (isSelectedMonth
-                                                            ? const Color(0xFF0071E3)
+                                                            ? const Color(
+                                                                0xFF0071E3)
                                                             : (isHovered
                                                                 ? accentPetrolHover
                                                                 : accent)),
                                                     borderRadius:
-                                                        const BorderRadius.vertical(
+                                                        const BorderRadius
+                                                            .vertical(
                                                       top: Radius.circular(5),
                                                     ),
                                                     border: isSelectedMonth
                                                         ? Border.all(
                                                             color: Colors.white
-                                                                .withValues(alpha: 0.9),
+                                                                .withValues(
+                                                                    alpha: 0.9),
                                                             width: 1.5,
                                                           )
                                                         : null,
-                                                    boxShadow: (isHovered || isSelectedMonth) && !isZero
+                                                    boxShadow: (isHovered ||
+                                                                isSelectedMonth) &&
+                                                            !isZero
                                                         ? [
                                                             BoxShadow(
                                                               color: (isSelectedMonth
-                                                                      ? const Color(0xFF0071E3)
+                                                                      ? const Color(
+                                                                          0xFF0071E3)
                                                                       : accent)
                                                                   .withValues(
-                                                                      alpha: 0.4),
+                                                                      alpha:
+                                                                          0.4),
                                                               blurRadius: 8,
-                                                              offset: const Offset(
-                                                                  0, -2),
+                                                              offset:
+                                                                  const Offset(
+                                                                      0, -2),
                                                             )
                                                           ]
                                                         : null,
@@ -3847,12 +5397,19 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                                             const SizedBox(height: 8),
                                             Container(
                                               padding: isSelectedMonth
-                                                  ? const EdgeInsets.symmetric(horizontal: 5, vertical: 1)
+                                                  ? const EdgeInsets.symmetric(
+                                                      horizontal: 5,
+                                                      vertical: 1)
                                                   : EdgeInsets.zero,
                                               decoration: isSelectedMonth
                                                   ? BoxDecoration(
-                                                      color: const Color(0xFF0071E3).withValues(alpha: 0.15),
-                                                      borderRadius: BorderRadius.circular(4),
+                                                      color: const Color(
+                                                              0xFF0071E3)
+                                                          .withValues(
+                                                              alpha: 0.15),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              4),
                                                     )
                                                   : null,
                                               child: Text(
@@ -3866,7 +5423,8 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                                                               ? textMuted
                                                               : textSecondary)),
                                                   fontSize: 10,
-                                                  fontWeight: (isHovered || isSelectedMonth)
+                                                  fontWeight: (isHovered ||
+                                                          isSelectedMonth)
                                                       ? FontWeight.w800
                                                       : FontWeight.w600,
                                                 ),
@@ -3944,7 +5502,11 @@ class _AnalyticsState extends State<AnalyticsScreen> {
   }
 
   // --- TARJETA 2: DISTRIBUCIÓN POR CATEGORÍA ---
-  Widget _buildCategoryCard(Map<String, double> categories, double totalGrams) {
+  Widget _buildCategoryCard(
+    Map<String, double> categories,
+    double totalGrams, {
+    bool fillHeight = false,
+  }) {
     final entries = categories.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
@@ -3958,6 +5520,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
     ];
 
     return Container(
+      key: const ValueKey('analytics_category_card'),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: surfaceCard,
@@ -3970,7 +5533,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'CATEGORÍAS DE USO',
                 style: TextStyle(
                   color: textPrimary,
@@ -3980,8 +5543,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   color: surfaceElevated,
                   borderRadius: BorderRadius.circular(6),
@@ -3989,7 +5551,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                 ),
                 child: Text(
                   '${entries.length} tipos',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: textSecondary,
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -4000,22 +5562,30 @@ class _AnalyticsState extends State<AnalyticsScreen> {
           ),
           const SizedBox(height: 16),
           if (entries.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: Text(
-                  'No hay categorías registradas',
-                  style: TextStyle(color: textSecondary, fontSize: 12),
-                ),
-              ),
-            )
+            fillHeight
+                ? Expanded(
+                    child: Center(
+                      child: Text(
+                        'No hay categorías registradas',
+                        style: TextStyle(color: textSecondary, fontSize: 12),
+                      ),
+                    ),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'No hay categorías registradas',
+                        style: TextStyle(color: textSecondary, fontSize: 12),
+                      ),
+                    ),
+                  )
           else
             Column(
               children: entries.asMap().entries.map((e) {
                 final idx = e.key;
                 final entry = e.value;
-                final pct =
-                    totalGrams > 0 ? (entry.value / totalGrams) : 0.0;
+                final pct = totalGrams > 0 ? (entry.value / totalGrams) : 0.0;
                 final col = categoryColors[idx % categoryColors.length];
 
                 return Padding(
@@ -4037,7 +5607,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                           Expanded(
                             child: Text(
                               entry.key,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: textPrimary,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -4047,7 +5617,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                           ),
                           Text(
                             '${entry.value.toStringAsFixed(1)} g',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: textPrimary,
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
@@ -4056,7 +5626,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                           const SizedBox(width: 6),
                           Text(
                             '(${(pct * 100).toStringAsFixed(0)}%)',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: textSecondary,
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
@@ -4086,8 +5656,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
 
   // --- TARJETA 3: TOP 5 PIEZAS CON MAYOR CONSUMO ---
   Widget _buildTopPiecesCard(List<_TopPieceStat> topPieces, double totalGrams) {
-    final highestGrams =
-        topPieces.isEmpty ? 1.0 : topPieces.first.totalGrams;
+    final highestGrams = topPieces.isEmpty ? 1.0 : topPieces.first.totalGrams;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -4099,7 +5668,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
@@ -4111,14 +5680,14 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                   letterSpacing: 0.8,
                 ),
               ),
-              Icon(Icons.leaderboard_outlined,
+              const Icon(Icons.leaderboard_outlined,
                   size: 16, color: accentPetrol),
             ],
           ),
           const SizedBox(height: 16),
           if (topPieces.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: Text(
                   'No hay piezas registradas en el periodo',
@@ -4139,9 +5708,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                     ? const Color(0xFFFF9500)
                     : (rank == 2
                         ? const Color(0xFF8E8E93)
-                        : (rank == 3
-                            ? const Color(0xFFC97A3E)
-                            : textMuted));
+                        : (rank == 3 ? const Color(0xFFC97A3E) : textMuted));
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
@@ -4175,7 +5742,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                           children: [
                             Text(
                               '${piece.name} · ${piece.totalUnits} uds',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: textPrimary,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -4189,9 +5756,8 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                                 value: ratio,
                                 minHeight: 4,
                                 backgroundColor: surfaceElevated,
-                                valueColor:
-                                    const AlwaysStoppedAnimation<Color>(
-                                        accentPetrol),
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                    accentPetrol),
                               ),
                             ),
                           ],
@@ -4201,7 +5767,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                       // Gramos acumulados
                       Text(
                         '${piece.totalGrams.toStringAsFixed(1)} g',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: textPrimary,
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
@@ -4239,7 +5805,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
@@ -4251,13 +5817,13 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                   letterSpacing: 0.8,
                 ),
               ),
-              Icon(Icons.palette_outlined, size: 16, color: accentAmber),
+              const Icon(Icons.palette_outlined, size: 16, color: accentAmber),
             ],
           ),
           const SizedBox(height: 16),
 
           // 1. Tarjetas Compactas de Tipo de Material
-          const Text(
+          Text(
             'TIPOS DE FILAMENTO',
             style: TextStyle(
               color: textSecondary,
@@ -4268,13 +5834,11 @@ class _AnalyticsState extends State<AnalyticsScreen> {
           ),
           const SizedBox(height: 8),
           if (matEntries.isEmpty)
-            const Text('Sin datos',
+            Text('Sin datos',
                 style: TextStyle(color: textSecondary, fontSize: 11))
           else
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: matEntries.map((m) {
+            Column(
+              children: matEntries.take(5).map((m) {
                 final pct = totalGrams > 0 ? (m.value / totalGrams) : 0.0;
                 final stockGrams = inventoryItems
                     .where((i) =>
@@ -4282,80 +5846,89 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                         m.key.trim().toUpperCase())
                     .fold(0.0, (s, i) => s + i.stockActual);
 
-                return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: surfaceElevated,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: borderSubtle),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 5, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: accentPetrol.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          m.key,
-                          style: const TextStyle(
-                            color: accentPetrol,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${m.value.toStringAsFixed(1)} g',
-                        style: const TextStyle(
-                          color: textPrimary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '(${(pct * 100).toStringAsFixed(0)}%)',
-                        style: const TextStyle(
-                          color: textSecondary,
-                          fontSize: 11,
-                        ),
-                      ),
-                      if (inventoryItems.isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: stockGrams > 0
-                                ? surfaceCard
-                                : const Color(0xFFFF9500).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              color: stockGrams > 0
-                                  ? borderSubtle
-                                  : const Color(0xFFFF9500).withValues(alpha: 0.3),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: accentPetrol.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              m.key,
+                              style: const TextStyle(
+                                color: accentPetrol,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
-                          child: Text(
-                            stockGrams > 0
-                                ? 'Stock: ${stockGrams >= 1000 ? '${(stockGrams / 1000).toStringAsFixed(1)} kg' : '${stockGrams.toInt()} g'}'
-                                : 'Sin stock',
+                          const SizedBox(width: 8),
+                          Text(
+                            '${m.value.toStringAsFixed(1)} g',
                             style: TextStyle(
-                              color: stockGrams > 0
-                                  ? textSecondary
-                                  : const Color(0xFFFF9500),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
+                              color: textPrimary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '(${(pct * 100).toStringAsFixed(0)}%)',
+                            style: TextStyle(
+                              color: textSecondary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (inventoryItems.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: stockGrams > 0
+                                    ? surfaceElevated
+                                    : semanticWarning.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: stockGrams > 0
+                                      ? borderSubtle
+                                      : semanticWarning.withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Text(
+                                stockGrams > 0
+                                    ? 'Stock: ${stockGrams >= 1000 ? '${(stockGrams / 1000).toStringAsFixed(1)} kg' : '${stockGrams.toInt()} g'}'
+                                    : 'Sin stock',
+                                style: TextStyle(
+                                  color: stockGrams > 0
+                                      ? textSecondary
+                                      : semanticWarning,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: pct.clamp(0.01, 1.0),
+                          minHeight: 4,
+                          backgroundColor: surfaceElevated,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              accentPetrol),
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 );
@@ -4363,11 +5936,11 @@ class _AnalyticsState extends State<AnalyticsScreen> {
             ),
 
           const SizedBox(height: 16),
-          const Divider(color: borderSubtle, height: 1),
+          Divider(color: borderSubtle, height: 1),
           const SizedBox(height: 14),
 
           // 2. Chips Cromáticos de Colores
-          const Text(
+          Text(
             'COLORES MÁS UTILIZADOS',
             style: TextStyle(
               color: textSecondary,
@@ -4378,7 +5951,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
           ),
           const SizedBox(height: 8),
           if (colEntries.isEmpty)
-            const Text('Sin datos',
+            Text('Sin datos',
                 style: TextStyle(color: textSecondary, fontSize: 11))
           else
             Wrap(
@@ -4407,7 +5980,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                       const SizedBox(width: 6),
                       Text(
                         c.key,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: textPrimary,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -4416,7 +5989,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                       const SizedBox(width: 6),
                       Text(
                         '${c.value.toStringAsFixed(0)} g',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: textSecondary,
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -4425,7 +5998,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                       const SizedBox(width: 3),
                       Text(
                         '(${(pct * 100).toStringAsFixed(0)}%)',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: textMuted,
                           fontSize: 10,
                         ),
@@ -4436,6 +6009,42 @@ class _AnalyticsState extends State<AnalyticsScreen> {
               }).toList(),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      decoration: BoxDecoration(
+        color: surfaceCard,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderSubtle),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.bar_chart_outlined, size: 44, color: textMuted),
+            const SizedBox(height: 12),
+            Text(
+              'No hay registros de producción en este periodo',
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Prueba seleccionando otro rango temporal en la barra superior.',
+              style: TextStyle(
+                color: textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -4515,7 +6124,9 @@ class _ExportState extends State<ExportScreen> {
   final selectedInventory = <String>{};
   late final InventoryViewModel inventory;
   bool _ownsInventory = false;
-  String period = 'MES';
+  String period = 'ESTE MES';
+  String searchQuery = '';
+  final TextEditingController _searchCtrl = TextEditingController();
 
   Future<void> _saveBytes(List<int> bytes, String fileName, String mimeType,
       String extension) async {
@@ -4555,6 +6166,8 @@ class _ExportState extends State<ExportScreen> {
       _ownsInventory = true;
     }
     inventory.addListener(_refresh);
+    selectedPrint.addAll(widget.vm.allRecords.map((r) => r.id));
+    selectedInventory.addAll(inventory.inventoryItems.map((i) => i.id));
   }
 
   void _refresh() {
@@ -4563,21 +6176,106 @@ class _ExportState extends State<ExportScreen> {
 
   @override
   void dispose() {
+    _searchCtrl.dispose();
     inventory.removeListener(_refresh);
     if (_ownsInventory) inventory.dispose();
     super.dispose();
   }
 
+  List<PrintRecord> get _filteredPrints {
+    final now = DateTime.now();
+    return widget.vm.allRecords.where((r) {
+      if (searchQuery.trim().isNotEmpty) {
+        final q = searchQuery.toLowerCase().trim();
+        final name = (r.projectName ?? r.pieceType).toLowerCase();
+        final cat = r.figureCategory.toLowerCase();
+        final req = (r.requesterName ?? '').toLowerCase();
+        final mat = r.materials
+            .map((m) => '${m.type} ${m.colorName ?? ''}')
+            .join(' ')
+            .toLowerCase();
+        if (!name.contains(q) &&
+            !cat.contains(q) &&
+            !mat.contains(q) &&
+            !req.contains(q)) {
+          return false;
+        }
+      }
+
+      final d = DateTime.fromMillisecondsSinceEpoch(r.date);
+      if (period == 'HOY') {
+        final startOfDay = DateTime(now.year, now.month, now.day);
+        return d.isAfter(startOfDay.subtract(const Duration(seconds: 1)));
+      } else if (period == '7 DÍAS') {
+        final sevenDaysAgo = now.subtract(const Duration(days: 7));
+        return d.isAfter(sevenDaysAgo);
+      } else if (period == 'ESTE MES') {
+        final startOfMonth = DateTime(now.year, now.month, 1);
+        return d.isAfter(startOfMonth.subtract(const Duration(seconds: 1)));
+      }
+      return true; // 'TODOS'
+    }).toList();
+  }
+
+  List<InventoryItem> get _filteredInventory {
+    if (searchQuery.trim().isEmpty) return inventory.inventoryItems;
+    final q = searchQuery.toLowerCase().trim();
+    return inventory.inventoryItems.where((item) {
+      return item.material.toLowerCase().contains(q) ||
+          item.color.toLowerCase().contains(q) ||
+          item.brand.toLowerCase().contains(q) ||
+          (item.location ?? '').toLowerCase().contains(q);
+    }).toList();
+  }
+
   List<PrintRecord> get _availablePrints {
-    final all = widget.vm.allRecords;
-    if (selectedPrint.isEmpty) return all;
-    return all.where((record) => selectedPrint.contains(record.id)).toList();
+    final filtered = _filteredPrints;
+    return filtered.where((record) => selectedPrint.contains(record.id)).toList();
   }
 
   List<InventoryItem> get _availableInventory {
-    final all = inventory.inventoryItems;
-    if (selectedInventory.isEmpty) return all;
-    return all.where((item) => selectedInventory.contains(item.id)).toList();
+    final filtered = _filteredInventory;
+    return filtered.where((item) => selectedInventory.contains(item.id)).toList();
+  }
+
+  bool get _areAllVisibleSelected {
+    if (tab == 0) {
+      final list = _filteredPrints;
+      if (list.isEmpty) return false;
+      return list.every((r) => selectedPrint.contains(r.id));
+    } else {
+      final list = _filteredInventory;
+      if (list.isEmpty) return false;
+      return list.every((item) => selectedInventory.contains(item.id));
+    }
+  }
+
+  void _toggleSelectAll() {
+    setState(() {
+      if (tab == 0) {
+        final list = _filteredPrints;
+        if (_areAllVisibleSelected) {
+          for (final r in list) {
+            selectedPrint.remove(r.id);
+          }
+        } else {
+          for (final r in list) {
+            selectedPrint.add(r.id);
+          }
+        }
+      } else {
+        final list = _filteredInventory;
+        if (_areAllVisibleSelected) {
+          for (final item in list) {
+            selectedInventory.remove(item.id);
+          }
+        } else {
+          for (final item in list) {
+            selectedInventory.add(item.id);
+          }
+        }
+      }
+    });
   }
 
   String _monthName(int month) => const [
@@ -4602,8 +6300,8 @@ class _ExportState extends State<ExportScreen> {
     for (final record in records) {
       final date = DateTime.fromMillisecondsSinceEpoch(record.date);
       final bucket = switch (period) {
-        'DÍA' => DateTime(date.year, date.month, date.day),
-        'SEMANA' => date.subtract(Duration(days: date.weekday - 1)),
+        'HOY' => DateTime(date.year, date.month, date.day),
+        '7 DÍAS' => date.subtract(Duration(days: date.weekday - 1)),
         _ => DateTime(date.year, date.month, 1),
       };
 
@@ -4613,11 +6311,11 @@ class _ExportState extends State<ExportScreen> {
 
     final ordered = grouped.keys.toList()..sort();
     return ordered.map((date) {
-      final end = period == 'SEMANA' ? date.add(const Duration(days: 6)) : date;
+      final end = period == '7 DÍAS' ? date.add(const Duration(days: 6)) : date;
       final label = switch (period) {
-        'DÍA' =>
+        'HOY' =>
           '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}',
-        'SEMANA' =>
+        '7 DÍAS' =>
           '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} - ${end.day.toString().padLeft(2, '0')}/${end.month.toString().padLeft(2, '0')}/${end.year}',
         _ => '${_monthName(date.month)} ${date.year}',
       };
@@ -4628,20 +6326,6 @@ class _ExportState extends State<ExportScreen> {
         grams: grouped[date] ?? 0,
       );
     }).toList();
-  }
-
-  String _getPeriodExplanation(String p) {
-    final now = DateTime.now();
-    String fmt(DateTime d) =>
-        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
-    return switch (p) {
-      'DÍA' => 'Hoy: ${fmt(now)} (últimas 24 horas)',
-      'SEMANA' =>
-        'Esta semana: del ${fmt(now.subtract(const Duration(days: 7)))} al ${fmt(now)} (últimos 7 días)',
-      'MES' =>
-        'Este mes: del ${fmt(DateTime(now.year, now.month, 1))} al ${fmt(now)}',
-      _ => 'Periodo seleccionado',
-    };
   }
 
   Future<void> _savePdf(
@@ -4668,9 +6352,9 @@ class _ExportState extends State<ExportScreen> {
             style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
           ),
           pw.SizedBox(height: 14),
-
           pw.Text('RESUMEN POR PERIODO',
-              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+              style:
+                  pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 6),
           pw.TableHelper.fromTextArray(
             headers: ['PERIODO', 'PIEZAS TOTALES', 'CONSUMO TOTAL'],
@@ -4682,15 +6366,16 @@ class _ExportState extends State<ExportScreen> {
                     ])
                 .toList(),
             border: null,
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+            headerStyle:
+                pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
             cellStyle: const pw.TextStyle(fontSize: 9),
             cellAlignment: pw.Alignment.centerLeft,
             headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
           ),
           pw.SizedBox(height: 16),
-
           pw.Text('DETALLE DE PIEZAS FABRICADAS',
-              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+              style:
+                  pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 6),
           pw.TableHelper.fromTextArray(
             headers: [
@@ -4703,9 +6388,10 @@ class _ExportState extends State<ExportScreen> {
             ],
             data: prints.map((r) {
               final matStr = r.materials.map((m) {
-                final cName = (m.colorName != null && m.colorName!.trim().isNotEmpty)
-                    ? m.colorName!
-                    : findVoxelColor(value: m.color).name;
+                final cName =
+                    (m.colorName != null && m.colorName!.trim().isNotEmpty)
+                        ? m.colorName!
+                        : findVoxelColor(value: m.color).name;
                 return '${m.type} ($cName)';
               }).join(', ');
               final date = DateTime.fromMillisecondsSinceEpoch(r.date);
@@ -4721,7 +6407,8 @@ class _ExportState extends State<ExportScreen> {
               ];
             }).toList(),
             border: null,
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
+            headerStyle:
+                pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
             cellStyle: const pw.TextStyle(fontSize: 8),
             cellAlignment: pw.Alignment.centerLeft,
             headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
@@ -4731,8 +6418,9 @@ class _ExportState extends State<ExportScreen> {
     );
 
     final bytes = await pdf.save();
+    final cleanPeriod = period.toLowerCase().replaceAll(' ', '_');
     final fileName =
-        'voxelcost3d_${period.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+        'voxelcost3d_${cleanPeriod}_${DateTime.now().millisecondsSinceEpoch}.pdf';
     await _saveBytes(bytes, fileName, 'application/pdf', 'pdf');
   }
 
@@ -4744,7 +6432,8 @@ class _ExportState extends State<ExportScreen> {
     final excel = excel_pkg.Excel.createExcel();
     final sheetSummary = excel['Resumen'];
     sheetSummary.appendRow(_toExcelRow(['TITULO', title]));
-    sheetSummary.appendRow(_toExcelRow(['PERIODO', 'PIEZAS TOTALES', 'CONSUMO TOTAL']));
+    sheetSummary
+        .appendRow(_toExcelRow(['PERIODO', 'PIEZAS TOTALES', 'CONSUMO TOTAL']));
     for (final row in summaryRows) {
       sheetSummary.appendRow(_toExcelRow(
           [row.label, row.count, '${row.grams.toStringAsFixed(1)} g']));
@@ -4753,7 +6442,12 @@ class _ExportState extends State<ExportScreen> {
     final sheetDetail = excel['Detalle Impresiones'];
     sheetDetail.appendRow(_toExcelRow([
       'FECHA',
-      'PIEZA',
+      'ACTIVO / PIEZA',
+      'SOLICITANTE',
+      'TIPO SOLICITANTE',
+      'NO. CONTROL / EMPLEADO',
+      'IMPRESORA',
+      'TIEMPO IMPRESIÓN',
       'CATEGORÍA',
       'MATERIAL Y COLOR',
       'CANTIDAD',
@@ -4774,6 +6468,11 @@ class _ExportState extends State<ExportScreen> {
       sheetDetail.appendRow(_toExcelRow([
         dateStr,
         r.pieceType,
+        r.requesterName ?? '',
+        r.requesterType ?? '',
+        r.requesterId ?? '',
+        r.printerName ?? '',
+        r.printTime ?? '',
         r.figureCategory,
         matStr,
         r.cantidad,
@@ -4788,8 +6487,9 @@ class _ExportState extends State<ExportScreen> {
       throw StateError('No se pudo serializar el archivo Excel');
     }
 
+    final cleanPeriod = period.toLowerCase().replaceAll(' ', '_');
     final fileName =
-        'voxelcost3d_${period.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+        'voxelcost3d_${cleanPeriod}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
     await _saveBytes(
         bytes,
         fileName,
@@ -4851,7 +6551,9 @@ class _ExportState extends State<ExportScreen> {
         'xlsx');
   }
 
-  Future<void> _export(BuildContext context, String format, int count) async {
+  Future<void> _export(BuildContext context, String format) async {
+    final count =
+        tab == 0 ? _availablePrints.length : _availableInventory.length;
     if (count == 0) {
       toast(context, 'Selecciona al menos un registro para exportar',
           isError: true);
@@ -4862,11 +6564,11 @@ class _ExportState extends State<ExportScreen> {
       if (tab == 0) {
         final rows = _buildSummaryRows(_availablePrints);
         if (format == 'PDF') {
-          await _savePdf(
-              rows, _availablePrints, 'VOXELCOST3D - REPORTE DE PRODUCCIÓN (${period.toUpperCase()})');
+          await _savePdf(rows, _availablePrints,
+              'VOXELCOST3D - REPORTE DE PRODUCCIÓN (${period.toUpperCase()})');
         } else {
-          await _saveExcel(
-              rows, _availablePrints, 'VOXELCOST3D - REPORTE DE PRODUCCIÓN (${period.toUpperCase()})');
+          await _saveExcel(rows, _availablePrints,
+              'VOXELCOST3D - REPORTE DE PRODUCCIÓN (${period.toUpperCase()})');
         }
       } else {
         final rows = _availableInventory
@@ -4892,18 +6594,25 @@ class _ExportState extends State<ExportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final count = tab == 0 ? selectedPrint.length : selectedInventory.length;
-    final totalItems = tab == 0
-        ? widget.vm.allRecords.length
-        : inventory.inventoryItems.length;
+    final prints = _filteredPrints;
+    final inventoryList = _filteredInventory;
+    final selectedCount =
+        tab == 0 ? _availablePrints.length : _availableInventory.length;
+    final visibleCount = tab == 0 ? prints.length : inventoryList.length;
+
+    final totalPieces =
+        tab == 0 ? _availablePrints.fold<int>(0, (s, r) => s + r.cantidad) : 0;
+    final totalGrams =
+        tab == 0 ? _availablePrints.fold<double>(0.0, (s, r) => s + r.totalGrams) : 0.0;
+    final totalStock =
+        tab == 1 ? _availableInventory.fold<double>(0.0, (s, i) => s + i.stockActual) : 0.0;
 
     return Scaffold(
       appBar: darkAppBar(
         'EXPORTAR DATOS',
         widget.onToggleMenu ?? () => goBack(context),
-        leadingWidget: widget.onToggleMenu != null
-            ? const SidebarToggleIcon()
-            : null,
+        leadingWidget:
+            widget.onToggleMenu != null ? const SidebarToggleIcon() : null,
         leadingIcon: Icons.arrow_back,
         onHoverEnter: widget.onHoverMenu,
         hideLeading: widget.isPinned,
@@ -4911,12 +6620,12 @@ class _ExportState extends State<ExportScreen> {
       backgroundColor: bgBase,
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: double.infinity),
+          constraints: const BoxConstraints(maxWidth: 1300),
           child: Column(
             children: [
-              // Segmented Control Tabs
+              // Segmented Tabs
               Container(
-                margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: surfaceCard,
@@ -4926,21 +6635,25 @@ class _ExportState extends State<ExportScreen> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: _tabButton('IMPRESIONES', 0, Icons.layers_outlined),
+                      child: _tabButton(
+                          'IMPRESIONES (${widget.vm.allRecords.length})',
+                          0,
+                          Icons.layers_outlined),
                     ),
                     Expanded(
                       child: _tabButton(
-                          'INVENTARIO', 1, Icons.inventory_2_outlined),
+                          'INVENTARIO (${inventory.inventoryItems.length})',
+                          1,
+                          Icons.inventory_2_outlined),
                     ),
                   ],
                 ),
               ),
 
-              // Filter & Selection Toolbar
+              // Barra de Búsqueda y Filtros
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: surfaceCard,
                   borderRadius: BorderRadius.circular(10),
@@ -4948,217 +6661,281 @@ class _ExportState extends State<ExportScreen> {
                 ),
                 child: Row(
                   children: [
-                    InkWell(
-                      onTap: () {
-                        setState(() {
-                          if (tab == 0) {
-                            if (selectedPrint.length ==
-                                widget.vm.allRecords.length) {
-                              selectedPrint.clear();
-                            } else {
-                              selectedPrint.clear();
-                              selectedPrint.addAll(widget.vm.allRecords
-                                  .map((record) => record.id));
-                            }
-                          } else {
-                            if (selectedInventory.length ==
-                                inventory.inventoryItems.length) {
-                              selectedInventory.clear();
-                            } else {
-                              selectedInventory.clear();
-                              selectedInventory.addAll(inventory
-                                  .inventoryItems
-                                  .map((item) => item.id));
-                            }
-                          }
-                        });
-                      },
-                      borderRadius: BorderRadius.circular(6),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            (count == totalItems && totalItems > 0)
-                                ? Icons.check_box
-                                : (count > 0
-                                    ? Icons.indeterminate_check_box
-                                    : Icons.check_box_outline_blank),
-                            size: 18,
-                            color: count > 0 ? accentPetrol : textSecondary,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'SELECCIONAR TODOS ($count/$totalItems)',
-                            style: TextStyle(
-                              color: count > 0 ? textPrimary : textSecondary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Spacer(),
-                    if (tab == 0) ...[
-                      const Text(
-                        'PERIODO:',
-                        style: TextStyle(
-                          color: textSecondary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 2),
+                    // Campo de Búsqueda Rápida
+                    Expanded(
+                      flex: 3,
+                      child: Container(
+                        height: 36,
                         decoration: BoxDecoration(
                           color: surfaceElevated,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: borderSubtle),
+                        ),
+                        child: TextField(
+                          controller: _searchCtrl,
+                          onChanged: (v) => setState(() => searchQuery = v),
+                          style: TextStyle(color: textPrimary, fontSize: 12),
+                          decoration: InputDecoration(
+                            hintText: tab == 0
+                                ? 'Buscar por pieza, material o categoría...'
+                                : 'Buscar por material, color o marca...',
+                            hintStyle:
+                                TextStyle(color: textMuted, fontSize: 12),
+                            prefixIcon: Icon(Icons.search,
+                                size: 16, color: textSecondary),
+                            suffixIcon: searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: Icon(Icons.close,
+                                        size: 14, color: textSecondary),
+                                    onPressed: () {
+                                      _searchCtrl.clear();
+                                      setState(() => searchQuery = '');
+                                    },
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 9),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    // Selector de Periodo (solo en tab Impresiones)
+                    if (tab == 0) ...[
+                      Container(
+                        height: 36,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: surfaceElevated,
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: borderSubtle),
                         ),
                         child: DropdownButton<String>(
                           value: period,
                           underline: const SizedBox(),
                           dropdownColor: surfaceElevated,
-                          icon: const Icon(Icons.arrow_drop_down,
+                          icon: Icon(Icons.arrow_drop_down,
                               color: textSecondary, size: 18),
                           items: const [
-                            DropdownMenuItem(value: 'DÍA', child: Text('DÍA')),
                             DropdownMenuItem(
-                                value: 'SEMANA', child: Text('SEMANA')),
-                            DropdownMenuItem(value: 'MES', child: Text('MES')),
+                                value: 'HOY',
+                                child: Text('Hoy',
+                                    style: TextStyle(fontSize: 12))),
+                            DropdownMenuItem(
+                                value: '7 DÍAS',
+                                child: Text('Últimos 7 días',
+                                    style: TextStyle(fontSize: 12))),
+                            DropdownMenuItem(
+                                value: 'ESTE MES',
+                                child: Text('Este mes',
+                                    style: TextStyle(fontSize: 12))),
+                            DropdownMenuItem(
+                                value: 'TODOS',
+                                child: Text('Histórico completo',
+                                    style: TextStyle(fontSize: 12))),
                           ],
-                          onChanged: (value) =>
-                              setState(() => period = value ?? 'MES'),
-                          style: const TextStyle(
+                          onChanged: (v) =>
+                              setState(() => period = v ?? 'ESTE MES'),
+                          style: TextStyle(
                             color: textPrimary,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
+                      const SizedBox(width: 10),
+                    ],
+
+                    // Botón Seleccionar Visibles
+                    InkWell(
+                      onTap: _toggleSelectAll,
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        height: 36,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: _areAllVisibleSelected
+                              ? accentPetrol.withValues(alpha: 0.12)
+                              : surfaceElevated,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: _areAllVisibleSelected
+                                ? accentPetrol
+                                : borderSubtle,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _areAllVisibleSelected
+                                  ? Icons.check_box
+                                  : Icons.check_box_outline_blank,
+                              size: 16,
+                              color: _areAllVisibleSelected
+                                  ? accentPetrol
+                                  : textSecondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _areAllVisibleSelected
+                                  ? 'Deseleccionar'
+                                  : 'Todos ($visibleCount)',
+                              style: TextStyle(
+                                color: _areAllVisibleSelected
+                                    ? accentPetrol
+                                    : textSecondary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // KPI Live Summary Bar
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: surfaceCard,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: borderSubtle),
+                ),
+                child: Row(
+                  children: [
+                    _kpiChip(
+                      Icons.checklist_rounded,
+                      '$selectedCount de $visibleCount seleccionados',
+                      color: accentPetrol,
+                    ),
+                    const SizedBox(width: 18),
+                    if (tab == 0) ...[
+                      _kpiChip(Icons.layers_outlined, '$totalPieces piezas'),
+                      const SizedBox(width: 18),
+                      _kpiChip(Icons.scale_outlined,
+                          '${totalGrams.toStringAsFixed(1)} g consumo'),
+                    ] else ...[
+                      _kpiChip(Icons.inventory_2_outlined,
+                          '${totalStock.toStringAsFixed(0)} g stock'),
                     ],
                   ],
                 ),
               ),
 
-              if (tab == 0)
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.symmetric(horizontal: 16)
-                      .copyWith(bottom: 6),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              // Lista Tabular de Registros
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                   decoration: BoxDecoration(
-                    color: surfaceElevated.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                        color: borderSubtle.withValues(alpha: 0.5)),
+                    color: surfaceCard,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: borderSubtle),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.info_outline,
-                          size: 13, color: textMuted),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Rango activo: ${_getPeriodExplanation(period)}',
-                        style: const TextStyle(
-                            color: textSecondary, fontSize: 11),
-                      ),
-                    ],
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LayoutBuilder(builder: (context, constraints) {
+                      final isWide = constraints.maxWidth >= 720;
+
+                      if (tab == 0) {
+                        if (prints.isEmpty) {
+                          return _emptyState('No hay impresiones en este periodo o filtro');
+                        }
+                        return Column(
+                          children: [
+                            if (isWide) _printsTableHeader(),
+                            Expanded(
+                              child: ListView.separated(
+                                itemCount: prints.length,
+                                separatorBuilder: (_, __) =>
+                                    Divider(height: 1, color: borderSubtle),
+                                itemBuilder: (_, index) {
+                                  final r = prints[index];
+                                  final checked = selectedPrint.contains(r.id);
+                                  return _printTableRow(r, checked, isWide);
+                                },
+                              ),
+                            ),
+                          ],
+                        );
+                      } else {
+                        if (inventoryList.isEmpty) {
+                          return _emptyState('No hay materiales en este filtro');
+                        }
+                        return Column(
+                          children: [
+                            if (isWide) _inventoryTableHeader(),
+                            Expanded(
+                              child: ListView.separated(
+                                itemCount: inventoryList.length,
+                                separatorBuilder: (_, __) =>
+                                    Divider(height: 1, color: borderSubtle),
+                                itemBuilder: (_, index) {
+                                  final item = inventoryList[index];
+                                  final checked =
+                                      selectedInventory.contains(item.id);
+                                  return _inventoryTableRow(
+                                      item, checked, isWide);
+                                },
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                    }),
                   ),
                 ),
-
-              // Items Grid with Rich Preview Cards
-              Expanded(
-                child: LayoutBuilder(builder: (context, constraints) {
-                  final columns = constraints.maxWidth >= 900
-                      ? 3
-                      : constraints.maxWidth >= 600
-                          ? 2
-                          : 1;
-
-                  if (tab == 0) {
-                    if (widget.vm.allRecords.isEmpty) {
-                      return const Center(
-                        child: Text('No hay registros de impresión',
-                            style: TextStyle(color: textSecondary)),
-                      );
-                    }
-                    return GridView.builder(
-                      padding: const EdgeInsets.all(16),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: columns == 1 ? 3.0 : 2.0,
-                      ),
-                      itemCount: widget.vm.allRecords.length,
-                      itemBuilder: (_, index) {
-                        final r = widget.vm.allRecords[index];
-                        final checked = selectedPrint.contains(r.id);
-                        final totalGrams = r.totalGrams;
-                        return _printPreviewCard(r, checked, totalGrams);
-                      },
-                    );
-                  } else {
-                    if (inventory.inventoryItems.isEmpty) {
-                      return const Center(
-                        child: Text('No hay materiales en el inventario',
-                            style: TextStyle(color: textSecondary)),
-                      );
-                    }
-                    return GridView.builder(
-                      padding: const EdgeInsets.all(16),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: columns == 1 ? 3.4 : 2.2,
-                      ),
-                      itemCount: inventory.inventoryItems.length,
-                      itemBuilder: (_, index) {
-                        final item = inventory.inventoryItems[index];
-                        final checked = selectedInventory.contains(item.id);
-                        return _inventoryPreviewCard(item, checked);
-                      },
-                    );
-                  }
-                }),
               ),
 
               // Bottom Action Bar
               Container(
-                padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
                   color: surfaceCard,
                   border: Border(top: BorderSide(color: borderSubtle)),
                 ),
                 child: Row(
                   children: [
-                    Expanded(
+                    Text(
+                      selectedCount == 0
+                          ? 'Ningún registro seleccionado'
+                          : '$selectedCount listo${selectedCount > 1 ? 's' : ''} para exportar',
+                      style: TextStyle(
+                        color: selectedCount > 0 ? textPrimary : textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    SizedBox(
+                      width: 175,
                       child: techButton(
-                        'EXPORTAR PDF ($count)',
-                        () => _export(context, 'PDF', count),
+                        'EXPORTAR PDF ($selectedCount)',
+                        () => _export(context, 'PDF'),
                         icon: Icons.picture_as_pdf_outlined,
                         color: surfaceElevated,
                         foreground: textPrimary,
                         isOutlined: true,
-                        height: 44,
+                        height: 40,
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Expanded(
+                    SizedBox(
+                      width: 185,
                       child: techButton(
-                        'EXPORTAR EXCEL ($count)',
-                        () => _export(context, 'Excel', count),
+                        'EXPORTAR EXCEL ($selectedCount)',
+                        () => _export(context, 'Excel'),
                         icon: Icons.table_chart_outlined,
                         color: accentPetrol,
-                        foreground: textPrimary,
-                        height: 44,
+                        foreground: Colors.white,
+                        height: 40,
                       ),
                     ),
                   ],
@@ -5171,185 +6948,340 @@ class _ExportState extends State<ExportScreen> {
     );
   }
 
-  Widget _tabButton(String title, int targetTab, IconData icon) {
-    final active = tab == targetTab;
-    return InkWell(
-      onTap: () => setState(() => tab = targetTab),
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: active ? surfaceElevated : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: active ? Border.all(color: borderSubtle) : null,
+  Widget _kpiChip(IconData icon, String text, {Color? color}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: color ?? textSecondary),
+        const SizedBox(width: 5),
+        Text(
+          text,
+          style: TextStyle(
+            color: color ?? textPrimary,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: active ? accentPetrol : textSecondary,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: TextStyle(
-                color: active ? textPrimary : textSecondary,
-                fontSize: 12,
-                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                letterSpacing: 0.8,
-              ),
-            ),
-          ],
-        ),
+      ],
+    );
+  }
+
+  Widget _emptyState(String message) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.inbox_outlined, size: 32, color: textMuted),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: TextStyle(color: textSecondary, fontSize: 13),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _printPreviewCard(
-      PrintRecord r, bool checked, double totalGrams) =>
-      InkWell(
-        onTap: () => setState(() {
-          if (checked) {
-            selectedPrint.remove(r.id);
-          } else {
-            selectedPrint.add(r.id);
-          }
-        }),
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: checked
-                ? accentPetrol.withValues(alpha: 0.08)
-                : surfaceCard,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: checked ? accentPetrol : borderSubtle,
-              width: checked ? 1.5 : 1.0,
-            ),
+  Widget _printsTableHeader() {
+    return Container(
+      height: 34,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: surfaceElevated,
+        border: Border(bottom: BorderSide(color: borderSubtle)),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 28),
+          SizedBox(
+            width: 80,
+            child: Text('FECHA',
+                style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5)),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                checked ? Icons.check_box : Icons.check_box_outline_blank,
-                size: 18,
-                color: checked ? accentPetrol : textSecondary,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
+          Expanded(
+            flex: 3,
+            child: Text('PIEZA / PROYECTO',
+                style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5)),
+          ),
+          SizedBox(
+            width: 110,
+            child: Text('CATEGORÍA',
+                style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5)),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text('MATERIAL Y COLOR',
+                style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5)),
+          ),
+          SizedBox(
+            width: 50,
+            child: Text('CANT.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5)),
+          ),
+          SizedBox(
+            width: 90,
+            child: Text('TOTAL (g)',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _printTableRow(PrintRecord r, bool checked, bool isWide) {
+    final title = (r.projectName ?? '').trim().isNotEmpty
+        ? r.projectName!
+        : r.pieceType;
+
+    return InkWell(
+      onTap: () => setState(() {
+        if (checked) {
+          selectedPrint.remove(r.id);
+        } else {
+          selectedPrint.add(r.id);
+        }
+      }),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        color: checked ? accentPetrol.withValues(alpha: 0.06) : Colors.transparent,
+        child: isWide
+            ? Row(
+                children: [
+                  Icon(
+                    checked ? Icons.check_box : Icons.check_box_outline_blank,
+                    size: 16,
+                    color: checked ? accentPetrol : textSecondary,
+                  ),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 80,
+                    child: Text(
+                      dateText(r.date, short: true),
+                      style: TextStyle(color: textSecondary, fontSize: 11),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 110,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: surfaceElevated,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: borderSubtle),
+                        ),
+                        child: Text(
+                          r.figureCategory.toUpperCase(),
+                          style: TextStyle(color: textSecondary, fontSize: 9),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 2,
+                      children: r.materials.map((m) {
+                        final colorObj = findVoxelColor(value: m.color);
+                        final colName = (m.colorName != null &&
+                                m.colorName!.trim().isNotEmpty)
+                            ? m.colorName!
+                            : colorObj.name;
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            colorSwatchCircle(colorObj.color,
+                                size: 8,
+                                isTransparent: colorObj.isTransparent),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${m.type} $colName',
+                              style: TextStyle(
+                                  color: textSecondary, fontSize: 11),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 50,
+                    child: Text(
+                      '×${r.cantidad}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: r.cantidad > 1 ? accentAmber : textPrimary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 90,
+                    child: Text(
+                      '${r.totalGrams.toStringAsFixed(1)} g',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  Icon(
+                    checked ? Icons.check_box : Icons.check_box_outline_blank,
+                    size: 16,
+                    color: checked ? accentPetrol : textSecondary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          r.pieceType,
-                          style: const TextStyle(
+                          title,
+                          style: TextStyle(
                             color: textPrimary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${r.figureCategory.toUpperCase()} · ${dateText(r.date, short: true)}',
-                          style: const TextStyle(
-                            color: textMuted,
-                            fontSize: 10,
-                          ),
+                          '${dateText(r.date, short: true)} · ${r.materials.map((m) => m.type).join(', ')}',
+                          style: TextStyle(color: textMuted, fontSize: 10),
                         ),
                       ],
                     ),
-                    Row(
-                      children: [
-                        if (r.cantidad > 1) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 5, vertical: 1.5),
-                            decoration: BoxDecoration(
-                              color: accentAmber.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                  color: accentAmber.withValues(alpha: 0.5)),
-                            ),
-                            child: Text(
-                              '×${r.cantidad}',
-                              style: const TextStyle(
-                                color: accentAmber,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        Expanded(
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: r.materials.take(2).map((m) {
-                              final colorObj =
-                                  findVoxelColor(value: m.color);
-                              final colName = (m.colorName != null &&
-                                      m.colorName!.trim().isNotEmpty)
-                                  ? m.colorName!
-                                  : colorObj.name;
-                              return Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  colorSwatchCircle(colorObj.color,
-                                      size: 8,
-                                      isTransparent: colorObj.isTransparent),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${m.type} · $colName',
-                                    style: const TextStyle(
-                                      color: textSecondary,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: surfaceElevated,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            r.cantidad > 1
-                                ? '${r.totalGrams.toStringAsFixed(1)} g (${r.unitGrams.toStringAsFixed(1)}g c/u)'
-                                : '${r.totalGrams.toStringAsFixed(1)} g',
-                            style: const TextStyle(
-                              color: textPrimary,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
+                  ),
+                  Text(
+                    '×${r.cantidad} · ${r.totalGrams.toStringAsFixed(1)} g',
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      );
+      ),
+    );
+  }
 
-  Widget _inventoryPreviewCard(InventoryItem item, bool checked) {
+  Widget _inventoryTableHeader() {
+    return Container(
+      height: 34,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: surfaceElevated,
+        border: Border(bottom: BorderSide(color: borderSubtle)),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 28),
+          Expanded(
+            flex: 3,
+            child: Text('MATERIAL Y COLOR',
+                style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5)),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text('MARCA / TIPO',
+                style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5)),
+          ),
+          SizedBox(
+            width: 150,
+            child: Text('STOCK ACTUAL',
+                style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5)),
+          ),
+          SizedBox(
+            width: 90,
+            child: Text('INICIAL',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5)),
+          ),
+          SizedBox(
+            width: 90,
+            child: Text('ESTADO',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _inventoryTableRow(InventoryItem item, bool checked, bool isWide) {
     final ratio = item.stockInicial > 0
         ? (item.stockActual / item.stockInicial).clamp(0.0, 1.0)
         : 0.0;
@@ -5363,89 +7295,197 @@ class _ExportState extends State<ExportScreen> {
           selectedInventory.add(item.id);
         }
       }),
-      borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: checked
-              ? accentPetrol.withValues(alpha: 0.08)
-              : surfaceCard,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: checked ? accentPetrol : borderSubtle,
-            width: checked ? 1.5 : 1.0,
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              checked ? Icons.check_box : Icons.check_box_outline_blank,
-              size: 18,
-              color: checked ? accentPetrol : textSecondary,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        color: checked ? accentPetrol.withValues(alpha: 0.06) : Colors.transparent,
+        child: isWide
+            ? Row(
                 children: [
-                  Row(
-                    children: [
-                      colorSwatchCircle(parseHex(item.colorHex), size: 10),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          '${item.material} - ${item.color}',
-                          style: const TextStyle(
-                            color: textPrimary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                  Icon(
+                    checked ? Icons.check_box : Icons.check_box_outline_blank,
+                    size: 16,
+                    color: checked ? accentPetrol : textSecondary,
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(2),
-                        child: LinearProgressIndicator(
-                          value: ratio,
-                          minHeight: 4,
-                          backgroundColor: surfaceElevated,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            isLow ? semanticDanger : accentPetrol,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${item.stockActual.toInt()} g disp.',
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 3,
+                    child: Row(
+                      children: [
+                        colorSwatchCircle(parseHex(item.colorHex), size: 10),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${item.material} - ${item.color}',
                             style: TextStyle(
-                              color: isLow ? semanticDanger : textPrimary,
-                              fontSize: 11,
+                              color: textPrimary,
+                              fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          Text(
-                            '${(ratio * 100).toInt()}%',
-                            style: const TextStyle(
-                              color: textMuted,
-                              fontSize: 10,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      item.brand.isNotEmpty ? item.brand : 'Genérica',
+                      style: TextStyle(color: textSecondary, fontSize: 11),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 150,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${item.stockActual.toInt()} g',
+                              style: TextStyle(
+                                color: isLow ? semanticDanger : textPrimary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              '${(ratio * 100).toInt()}%',
+                              style: TextStyle(
+                                  color: textMuted, fontSize: 10),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: ratio,
+                            minHeight: 4,
+                            backgroundColor: surfaceElevated,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              isLow ? semanticDanger : accentPetrol,
                             ),
                           ),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    width: 90,
+                    child: Text(
+                      '${item.stockInicial.toInt()} g',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(color: textSecondary, fontSize: 11),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 90,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isLow
+                              ? semanticDanger.withValues(alpha: 0.15)
+                              : semanticSuccess.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          isLow ? 'BAJO' : 'OK',
+                          style: TextStyle(
+                            color: isLow ? semanticDanger : semanticSuccess,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
-                    ],
+                    ),
                   ),
                 ],
+              )
+            : Row(
+                children: [
+                  Icon(
+                    checked ? Icons.check_box : Icons.check_box_outline_blank,
+                    size: 16,
+                    color: checked ? accentPetrol : textSecondary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            colorSwatchCircle(parseHex(item.colorHex), size: 8),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                '${item.material} - ${item.color}',
+                                style: TextStyle(
+                                  color: textPrimary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${item.brand} · ${item.stockActual.toInt()} g de ${item.stockInicial.toInt()} g',
+                          style: TextStyle(color: textMuted, fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _tabButton(String title, int targetTab, IconData icon) {
+    final active = tab == targetTab;
+    return InkWell(
+      onTap: () => setState(() {
+        tab = targetTab;
+        searchQuery = '';
+        _searchCtrl.clear();
+      }),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: active ? surfaceElevated : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: active ? Border.all(color: borderSubtle) : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 15,
+              color: active ? accentPetrol : textSecondary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                color: active ? textPrimary : textSecondary,
+                fontSize: 11,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                letterSpacing: 0.6,
               ),
             ),
           ],
@@ -5478,9 +7518,9 @@ class _InventoryState extends State<InventoryScreen> {
   late final InventoryViewModel vm;
   bool _ownsVm = false;
   String search = '';
+  final TextEditingController _searchCtrl = TextEditingController();
   String statusFilter = 'Todos'; // 'Todos', 'Activos', 'Bajo', 'Agotados'
   String materialFilter = 'Todos';
-  String brandFilter = 'Todas';
   bool isGridView = true;
 
   @override
@@ -5496,6 +7536,7 @@ class _InventoryState extends State<InventoryScreen> {
 
   @override
   void dispose() {
+    _searchCtrl.dispose();
     if (_ownsVm) vm.dispose();
     super.dispose();
   }
@@ -5527,13 +7568,13 @@ class _InventoryState extends State<InventoryScreen> {
               return false;
             }
 
-            // Filtro por Marca
-            if (brandFilter != 'Todas' && i.brand != brandFilter) {
-              return false;
-            }
-
             return true;
           }).toList();
+
+          final availableMaterials = [
+            'Todos',
+            ...vm.inventoryItems.map((x) => x.material).toSet().toList()
+          ];
 
           return Scaffold(
             appBar: darkAppBar(
@@ -5555,12 +7596,15 @@ class _InventoryState extends State<InventoryScreen> {
                         builder: (_) => AddProductScreen(vm: vm),
                       ),
                     ),
-                    icon: const Icon(Icons.add, size: 16, color: textPrimary),
-                    label: const Text('Nueva Bobina',
-                        style: TextStyle(
-                            color: textPrimary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700)),
+                    icon: Icon(Icons.add, size: 16, color: textPrimary),
+                    label: Text(
+                      'Nueva Bobina',
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 0),
@@ -5579,35 +7623,45 @@ class _InventoryState extends State<InventoryScreen> {
             backgroundColor: bgBase,
             body: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: double.infinity),
+                constraints: const BoxConstraints(maxWidth: 1300),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Barra de Control Minimalista (Buscador + Filtros + Vista)
+                      if (vm.error != null) ...[
+                        _databaseError(vm.error!),
+                        const SizedBox(height: 10),
+                      ],
+
+                      // 2. Barra de Búsqueda y Filtros Rápidos
                       Row(
                         children: [
                           // Buscador compacto
                           Expanded(
+                            flex: 3,
                             child: SizedBox(
                               height: 38,
                               child: TextField(
+                                controller: _searchCtrl,
                                 onChanged: (x) => setState(() => search = x),
-                                style: const TextStyle(
-                                    color: textPrimary, fontSize: 13),
+                                style:
+                                    TextStyle(color: textPrimary, fontSize: 13),
                                 decoration: InputDecoration(
-                                  hintText: 'Buscar material, color o marca...',
-                                  hintStyle: const TextStyle(
-                                      color: textMuted, fontSize: 13),
-                                  prefixIcon: const Icon(Icons.search,
+                                  hintText:
+                                      'Buscar material, color, marca o ubicación...',
+                                  hintStyle:
+                                      TextStyle(color: textMuted, fontSize: 12),
+                                  prefixIcon: Icon(Icons.search,
                                       color: textSecondary, size: 17),
                                   suffixIcon: search.isNotEmpty
                                       ? IconButton(
-                                          icon: const Icon(Icons.clear,
+                                          icon: Icon(Icons.clear,
                                               size: 14, color: textSecondary),
-                                          onPressed: () =>
-                                              setState(() => search = ''),
+                                          onPressed: () {
+                                            _searchCtrl.clear();
+                                            setState(() => search = '');
+                                          },
                                         )
                                       : null,
                                   filled: true,
@@ -5616,13 +7670,11 @@ class _InventoryState extends State<InventoryScreen> {
                                       horizontal: 10, vertical: 0),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
-                                    borderSide:
-                                        const BorderSide(color: borderSubtle),
+                                    borderSide: BorderSide(color: borderSubtle),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
-                                    borderSide:
-                                        const BorderSide(color: borderSubtle),
+                                    borderSide: BorderSide(color: borderSubtle),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
@@ -5633,94 +7685,11 @@ class _InventoryState extends State<InventoryScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-
-                          // Filtros de Estado Compactos
-                          _filterChip(
-                            'Todas (${vm.inventoryItems.length})',
-                            statusFilter == 'Todos',
-                            () => setState(() => statusFilter = 'Todos'),
-                          ),
-                          if (vm.lowStockCount > 0)
-                            _filterChip(
-                              'Bajo Stock (${vm.lowStockCount})',
-                              statusFilter == 'Bajo',
-                              () => setState(() => statusFilter = 'Bajo'),
-                              isAlert: true,
-                            ),
-                          if (vm.depletedStockCount > 0)
-                            _filterChip(
-                              'Agotadas (${vm.depletedStockCount})',
-                              statusFilter == 'Agotados',
-                              () => setState(() => statusFilter = 'Agotados'),
-                            ),
-
-                          // Menú desplegable de Material (si hay variedad)
-                          if (vm.inventoryItems
-                                  .map((x) => x.material)
-                                  .toSet()
-                                  .length >
-                              1) ...[
-                            const SizedBox(width: 4),
-                            PopupMenuButton<String>(
-                              tooltip: 'Filtrar por material',
-                              onSelected: (val) =>
-                                  setState(() => materialFilter = val),
-                              color: surfaceElevated,
-                              itemBuilder: (_) => [
-                                const PopupMenuItem(
-                                    value: 'Todos',
-                                    child: Text('Todos los materiales')),
-                                ...vm.inventoryItems
-                                    .map((x) => x.material)
-                                    .toSet()
-                                    .map((mat) => PopupMenuItem(
-                                        value: mat, child: Text(mat))),
-                              ],
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 9, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: materialFilter != 'Todos'
-                                      ? accentPetrol
-                                      : surfaceCard,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: materialFilter != 'Todos'
-                                        ? accentPetrol
-                                        : borderSubtle,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      materialFilter == 'Todos'
-                                          ? 'Material'
-                                          : materialFilter,
-                                      style: TextStyle(
-                                        color: materialFilter != 'Todos'
-                                            ? textPrimary
-                                            : textSecondary,
-                                        fontSize: 11,
-                                        fontWeight: materialFilter != 'Todos'
-                                            ? FontWeight.w700
-                                            : FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    const Icon(Icons.arrow_drop_down,
-                                        size: 14, color: textSecondary),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
+                          const SizedBox(width: 12),
 
                           // Selector de Vista (Cuadrícula / Lista)
-                          const SizedBox(width: 8),
                           Container(
-                            height: 36,
+                            height: 38,
                             decoration: BoxDecoration(
                               color: surfaceCard,
                               borderRadius: BorderRadius.circular(8),
@@ -5760,14 +7729,58 @@ class _InventoryState extends State<InventoryScreen> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 10),
+
+                      // 3. Fila de Filtros de Material y Estado Horizontal
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            ...availableMaterials.map((mat) {
+                              final isSel = materialFilter == mat;
+                              final count = mat == 'Todos'
+                                  ? vm.inventoryItems.length
+                                  : vm.inventoryItems
+                                      .where((i) => i.material == mat)
+                                      .length;
+                              return _filterChip(
+                                '$mat ($count)',
+                                isSel,
+                                () => setState(() => materialFilter = mat),
+                              );
+                            }),
+                            const SizedBox(width: 6),
+                            Container(
+                              height: 18,
+                              width: 1,
+                              color: borderSubtle,
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                            ),
+                            const SizedBox(width: 6),
+                            _filterChip(
+                              'Todos los estados',
+                              statusFilter == 'Todos',
+                              () => setState(() => statusFilter = 'Todos'),
+                            ),
+                            if (vm.lowStockCount > 0)
+                              _filterChip(
+                                'Bajo Stock (${vm.lowStockCount})',
+                                statusFilter == 'Bajo',
+                                () => setState(() => statusFilter = 'Bajo'),
+                                isAlert: true,
+                              ),
+                            if (vm.depletedStockCount > 0)
+                              _filterChip(
+                                'Agotadas (${vm.depletedStockCount})',
+                                statusFilter == 'Agotados',
+                                () => setState(() => statusFilter = 'Agotados'),
+                              ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 14),
 
-                      if (vm.error != null) ...[
-                        _databaseError(vm.error!),
-                        const SizedBox(height: 12),
-                      ],
-
-                      // Lista o Cuadrícula de Materiales Minimalista
+                      // 4. Catálogo de Bobinas (Grid o Tabla)
                       Expanded(
                         child: items.isEmpty
                             ? Center(
@@ -5784,11 +7797,10 @@ class _InventoryState extends State<InventoryScreen> {
                                     Text(
                                       search.isNotEmpty ||
                                               statusFilter != 'Todos' ||
-                                              materialFilter != 'Todos' ||
-                                              brandFilter != 'Todas'
+                                              materialFilter != 'Todos'
                                           ? 'No se encontraron bobinas con estos filtros'
                                           : 'No hay bobinas registradas',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                           color: textSecondary,
                                           fontSize: 13,
                                           fontWeight: FontWeight.w500),
@@ -5801,8 +7813,8 @@ class _InventoryState extends State<InventoryScreen> {
                                     padding: const EdgeInsets.only(bottom: 16),
                                     gridDelegate:
                                         const SliverGridDelegateWithMaxCrossAxisExtent(
-                                      maxCrossAxisExtent: 360,
-                                      mainAxisExtent: 154,
+                                      maxCrossAxisExtent: 380,
+                                      mainAxisExtent: 178,
                                       crossAxisSpacing: 12,
                                       mainAxisSpacing: 12,
                                     ),
@@ -5820,6 +7832,7 @@ class _InventoryState extends State<InventoryScreen> {
           );
         },
       );
+
 
   Widget _databaseError(String message) => Container(
         width: double.infinity,
@@ -5841,7 +7854,7 @@ class _InventoryState extends State<InventoryScreen> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
           decoration: BoxDecoration(
             color: isSelected
                 ? (isAlert ? semanticDanger : accentPetrol)
@@ -5875,7 +7888,7 @@ class _InventoryState extends State<InventoryScreen> {
         item.brand.trim().isNotEmpty && item.brand.trim() != 'Genérica';
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: surfaceCard,
         borderRadius: BorderRadius.circular(10),
@@ -5895,7 +7908,7 @@ class _InventoryState extends State<InventoryScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              colorSwatchCircle(spoolColor, size: 14),
+              colorSwatchCircle(spoolColor, size: 15),
               const SizedBox(width: 9),
               Expanded(
                 child: Column(
@@ -5904,7 +7917,7 @@ class _InventoryState extends State<InventoryScreen> {
                     if (hasRealBrand)
                       Text(
                         item.brand.toUpperCase(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: textSecondary,
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
@@ -5915,9 +7928,9 @@ class _InventoryState extends State<InventoryScreen> {
                       ),
                     Text(
                       '${item.material} · ${item.color}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: textPrimary,
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
                       maxLines: 1,
@@ -5926,16 +7939,15 @@ class _InventoryState extends State<InventoryScreen> {
                   ],
                 ),
               ),
-              // Alertas sutiles (SIN badge verde 'DISPONIBLE' que sature)
               if (depleted)
                 _statusBadge('AGOTADO', semanticDanger)
               else if (low)
                 _statusBadge('BAJO STOCK', semanticDanger),
+              const SizedBox(width: 4),
 
-              // Menú desplegable discreto con todas las acciones
               PopupMenuButton<String>(
                 tooltip: 'Opciones',
-                icon: const Icon(Icons.more_horiz_rounded,
+                icon: Icon(Icons.more_horiz_rounded,
                     size: 18, color: textSecondary),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -5949,8 +7961,6 @@ class _InventoryState extends State<InventoryScreen> {
                             AddProductScreen(vm: vm, itemToEdit: item),
                       ),
                     );
-                  } else if (val == 'weigh') {
-                    _showWeighAndTareDialog(item);
                   } else if (val == 'copy') {
                     await vm.duplicateItem(item);
                     if (!mounted) return;
@@ -5959,26 +7969,15 @@ class _InventoryState extends State<InventoryScreen> {
                     _confirmDeleteItem(item);
                   }
                 },
-                itemBuilder: (_) => const [
+                itemBuilder: (_) => [
                   PopupMenuItem(
                     value: 'edit',
                     child: Row(
                       children: [
                         Icon(Icons.edit_outlined,
                             size: 15, color: textSecondary),
-                        SizedBox(width: 8),
-                        Text('Editar ficha', style: TextStyle(fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'weigh',
-                    child: Row(
-                      children: [
-                        Icon(Icons.scale_outlined,
-                            size: 15, color: textSecondary),
-                        SizedBox(width: 8),
-                        Text('Pesar en báscula (tara)',
+                        const SizedBox(width: 8),
+                        const Text('Editar bobina',
                             style: TextStyle(fontSize: 12)),
                       ],
                     ),
@@ -5989,13 +7988,13 @@ class _InventoryState extends State<InventoryScreen> {
                       children: [
                         Icon(Icons.copy_outlined,
                             size: 15, color: textSecondary),
-                        SizedBox(width: 8),
-                        Text('Duplicar bobina',
+                        const SizedBox(width: 8),
+                        const Text('Duplicar ficha',
                             style: TextStyle(fontSize: 12)),
                       ],
                     ),
                   ),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'delete',
                     child: Row(
                       children: [
@@ -6003,8 +8002,8 @@ class _InventoryState extends State<InventoryScreen> {
                             size: 15, color: semanticDanger),
                         SizedBox(width: 8),
                         Text('Eliminar',
-                            style: TextStyle(
-                                fontSize: 12, color: semanticDanger)),
+                            style:
+                                TextStyle(fontSize: 12, color: semanticDanger)),
                       ],
                     ),
                   ),
@@ -6013,99 +8012,127 @@ class _InventoryState extends State<InventoryScreen> {
             ],
           ),
 
-          // 2. Medidor Central de Stock (Grande, legible y limpio)
-          InkWell(
-            onTap: () => _showWeighAndTareDialog(item),
-            borderRadius: BorderRadius.circular(6),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          // 2. Medidor Central de Stock
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.baseline,
                     textBaseline: TextBaseline.alphabetic,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            '${item.stockActual.toInt()} g',
-                            style: TextStyle(
-                              color: low ? semanticDanger : textPrimary,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'de ${item.stockInicial.toInt()} g',
-                            style: const TextStyle(
-                              color: textSecondary,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
                       Text(
-                        '${(ratio * 100).toInt()}%',
+                        '${item.stockActual.toInt()} g',
                         style: TextStyle(
-                          color: low ? semanticDanger : textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                          color: low ? semanticDanger : textPrimary,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        'de ${item.stockInicial.toInt()} g',
+                        style: TextStyle(
+                          color: textSecondary,
+                          fontSize: 11,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(2),
-                    child: LinearProgressIndicator(
-                      value: ratio,
-                      minHeight: 4,
-                      backgroundColor: surfaceElevated,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        depleted
-                            ? textMuted
-                            : low
-                                ? semanticDanger
-                                : accentPetrol,
-                      ),
+                  Text(
+                    '${(ratio * 100).toInt()}%',
+                    style: TextStyle(
+                      color: low ? semanticDanger : textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
               ),
-            ),
-          ),
-
-          // 3. Fila Inferior: Detalles técnicos tenues + Botones de ajuste sutiles
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  '${item.diameter.toStringAsFixed(2)} mm'
-                  '${item.tempNozzle != null ? ' · ♨ ${item.tempNozzle}°C' : ''}'
-                  '${item.finish != 'Estándar' && item.finish.isNotEmpty ? ' · ${item.finish}' : ''}',
-                  style: const TextStyle(
-                    color: textSecondary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
+              const SizedBox(height: 5),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: ratio,
+                  minHeight: 4,
+                  backgroundColor: surfaceElevated,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    depleted
+                        ? textMuted
+                        : low
+                            ? semanticDanger
+                            : accentPetrol,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Row(
-                children: [
-                  _adjustTextButton('-50g', () => vm.updateStock(item, -50)),
-                  const SizedBox(width: 4),
-                  _adjustTextButton('+50g', () => vm.updateStock(item, 50)),
-                ],
+            ],
+          ),
+
+          // 3. Fila de Datos Técnicos
+          Row(
+            children: [
+              Text(
+                '${item.diameter.toStringAsFixed(2)} mm',
+                style: TextStyle(color: textSecondary, fontSize: 10),
               ),
+              if (item.tempNozzle != null) ...[
+                Text(' · ♨ ${item.tempNozzle}°C',
+                    style: TextStyle(color: textSecondary, fontSize: 10)),
+              ],
+              if (item.location != null && item.location!.trim().isNotEmpty) ...[
+                Text(' · 📍 ${item.location}',
+                    style: TextStyle(color: textSecondary, fontSize: 10),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ],
+            ],
+          ),
+
+          // 4. Fila Inferior de Acciones Rápidas
+          Row(
+            children: [
+              // Botón destacado para Báscula
+              Expanded(
+                child: InkWell(
+                  onTap: () => _showWeighAndTareDialog(item),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    height: 28,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: surfaceElevated,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: borderSubtle),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.scale_outlined,
+                            size: 13, color: textSecondary),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Pesar en báscula',
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              // Ajustes rápidos
+              _adjustTextButton('-50g', () => vm.updateStock(item, -50)),
+              const SizedBox(width: 4),
+              _adjustTextButton('+50g', () => vm.updateStock(item, 50)),
             ],
           ),
         ],
@@ -6124,7 +8151,7 @@ class _InventoryState extends State<InventoryScreen> {
           final depleted = item.isDepleted;
 
           return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: surfaceCard,
               borderRadius: BorderRadius.circular(8),
@@ -6135,8 +8162,8 @@ class _InventoryState extends State<InventoryScreen> {
             ),
             child: Row(
               children: [
-                colorSwatchCircle(parseHex(item.colorHex), size: 12),
-                const SizedBox(width: 10),
+                colorSwatchCircle(parseHex(item.colorHex), size: 13),
+                const SizedBox(width: 12),
                 Expanded(
                   flex: 3,
                   child: Column(
@@ -6144,7 +8171,7 @@ class _InventoryState extends State<InventoryScreen> {
                     children: [
                       Text(
                         '${item.brand != 'Genérica' ? '[${item.brand}] ' : ''}${item.material} · ${item.color}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: textPrimary,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -6153,14 +8180,14 @@ class _InventoryState extends State<InventoryScreen> {
                       ),
                       Text(
                         '${item.diameter.toStringAsFixed(2)} mm'
-                        '${item.tempNozzle != null ? ' · ${item.tempNozzle}°C' : ''}',
-                        style:
-                            const TextStyle(color: textSecondary, fontSize: 10),
+                        '${item.tempNozzle != null ? ' · ♨ ${item.tempNozzle}°C' : ''}'
+                        '${item.location != null && item.location!.isNotEmpty ? ' · 📍 ${item.location}' : ''}',
+                        style: TextStyle(color: textSecondary, fontSize: 10),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 Expanded(
                   flex: 2,
                   child: Column(
@@ -6170,7 +8197,7 @@ class _InventoryState extends State<InventoryScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '${item.stockActual.toInt()} g',
+                            '${item.stockActual.toInt()} g disp.',
                             style: TextStyle(
                               color: low ? semanticDanger : textPrimary,
                               fontSize: 12,
@@ -6192,7 +8219,7 @@ class _InventoryState extends State<InventoryScreen> {
                         borderRadius: BorderRadius.circular(2),
                         child: LinearProgressIndicator(
                           value: ratio,
-                          minHeight: 3,
+                          minHeight: 4,
                           backgroundColor: surfaceElevated,
                           valueColor: AlwaysStoppedAnimation<Color>(
                             depleted
@@ -6206,26 +8233,36 @@ class _InventoryState extends State<InventoryScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
+                IconButton(
+                  tooltip: 'Pesar en báscula',
+                  icon: Icon(Icons.scale_outlined,
+                      size: 16, color: textSecondary),
+                  onPressed: () => _showWeighAndTareDialog(item),
+                  visualDensity: VisualDensity.compact,
+                ),
+                IconButton(
+                  tooltip: 'Editar',
+                  icon: Icon(Icons.edit_outlined,
+                      size: 16, color: textSecondary),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          AddProductScreen(vm: vm, itemToEdit: item),
+                    ),
+                  ),
+                  visualDensity: VisualDensity.compact,
+                ),
                 PopupMenuButton<String>(
-                  tooltip: 'Opciones',
-                  icon: const Icon(Icons.more_horiz_rounded,
+                  tooltip: 'Más opciones',
+                  icon: Icon(Icons.more_horiz_rounded,
                       size: 18, color: textSecondary),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   color: surfaceElevated,
                   onSelected: (val) async {
-                    if (val == 'edit') {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              AddProductScreen(vm: vm, itemToEdit: item),
-                        ),
-                      );
-                    } else if (val == 'weigh') {
-                      _showWeighAndTareDialog(item);
-                    } else if (val == 'copy') {
+                    if (val == 'copy') {
                       await vm.duplicateItem(item);
                       if (!mounted) return;
                       toast(context, 'Bobina duplicada');
@@ -6235,22 +8272,14 @@ class _InventoryState extends State<InventoryScreen> {
                   },
                   itemBuilder: (_) => const [
                     PopupMenuItem(
-                      value: 'edit',
-                      child: Text('Editar ficha', style: TextStyle(fontSize: 12)),
-                    ),
-                    PopupMenuItem(
-                      value: 'weigh',
-                      child: Text('Pesar en báscula',
-                          style: TextStyle(fontSize: 12)),
-                    ),
-                    PopupMenuItem(
                       value: 'copy',
                       child: Text('Duplicar', style: TextStyle(fontSize: 12)),
                     ),
                     PopupMenuItem(
                       value: 'delete',
                       child: Text('Eliminar',
-                          style: TextStyle(fontSize: 12, color: semanticDanger)),
+                          style:
+                              TextStyle(fontSize: 12, color: semanticDanger)),
                     ),
                   ],
                 ),
@@ -6282,7 +8311,9 @@ class _InventoryState extends State<InventoryScreen> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(4),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          height: 28,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 7),
           decoration: BoxDecoration(
             color: surfaceElevated,
             borderRadius: BorderRadius.circular(4),
@@ -6290,9 +8321,9 @@ class _InventoryState extends State<InventoryScreen> {
           ),
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: textSecondary,
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -6324,7 +8355,7 @@ class _InventoryState extends State<InventoryScreen> {
             backgroundColor: surfaceCard,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: borderSubtle),
+              side: BorderSide(color: borderSubtle),
             ),
             title: Row(
               children: [
@@ -6333,7 +8364,7 @@ class _InventoryState extends State<InventoryScreen> {
                 Expanded(
                   child: Text(
                     'Ajustar Stock: [${item.brand}] ${item.material}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: textPrimary,
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -6352,10 +8383,9 @@ class _InventoryState extends State<InventoryScreen> {
                 children: [
                   Text(
                     'Color: ${item.color} · Capacidad inicial: ${item.stockInicial.toInt()} g',
-                    style: const TextStyle(color: textSecondary, fontSize: 12),
+                    style: TextStyle(color: textSecondary, fontSize: 12),
                   ),
                   const SizedBox(height: 12),
-                  // Selector Directo vs Báscula
                   Container(
                     padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
@@ -6452,15 +8482,15 @@ class _InventoryState extends State<InventoryScreen> {
                   if (mode == 0) ...[
                     TextField(
                       controller: directCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       autofocus: true,
-                      style: const TextStyle(color: textPrimary, fontSize: 14),
+                      style: TextStyle(color: textPrimary, fontSize: 14),
                       decoration: fieldDecoration(
                         'Gramos netos disponibles',
                         hint: 'Ej: 750.0',
-                        suffix: const Padding(
-                          padding: EdgeInsets.symmetric(
+                        suffix: Padding(
+                          padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 12),
                           child: Text('gramos',
                               style: TextStyle(
@@ -6472,15 +8502,15 @@ class _InventoryState extends State<InventoryScreen> {
                     TextField(
                       controller: grossCtrl,
                       onChanged: (_) => setModalState(() {}),
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       autofocus: true,
-                      style: const TextStyle(color: textPrimary, fontSize: 14),
+                      style: TextStyle(color: textPrimary, fontSize: 14),
                       decoration: fieldDecoration(
                         'Peso total en báscula',
                         hint: 'Ej: 950 (rollo con plástico)',
-                        suffix: const Padding(
-                          padding: EdgeInsets.symmetric(
+                        suffix: Padding(
+                          padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 12),
                           child: Text('gramos',
                               style: TextStyle(
@@ -6492,14 +8522,14 @@ class _InventoryState extends State<InventoryScreen> {
                     TextField(
                       controller: tareCtrl,
                       onChanged: (_) => setModalState(() {}),
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
-                      style: const TextStyle(color: textPrimary, fontSize: 13),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      style: TextStyle(color: textPrimary, fontSize: 13),
                       decoration: fieldDecoration(
                         'Tara (peso del carrete plástico vacío)',
                         hint: 'Ej: 200',
-                        suffix: const Padding(
-                          padding: EdgeInsets.symmetric(
+                        suffix: Padding(
+                          padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 12),
                           child: Text('gramos',
                               style: TextStyle(
@@ -6520,7 +8550,7 @@ class _InventoryState extends State<InventoryScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Filamento neto restante:',
                             style:
                                 TextStyle(color: textSecondary, fontSize: 12),
@@ -6545,8 +8575,7 @@ class _InventoryState extends State<InventoryScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogCtx),
-                child: const Text('Cancelar',
-                    style: TextStyle(color: textSecondary)),
+                child: Text('Cancelar', style: TextStyle(color: textSecondary)),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -6592,9 +8621,9 @@ class _InventoryState extends State<InventoryScreen> {
         backgroundColor: surfaceCard,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: borderSubtle),
+          side: BorderSide(color: borderSubtle),
         ),
-        title: const Text(
+        title: Text(
           'Eliminar Bobina',
           style: TextStyle(
             color: textPrimary,
@@ -6604,13 +8633,12 @@ class _InventoryState extends State<InventoryScreen> {
         ),
         content: Text(
           '¿Deseas eliminar "${item.brand} - ${item.material} (${item.color})" del inventario?',
-          style: const TextStyle(color: textSecondary, fontSize: 13),
+          style: TextStyle(color: textSecondary, fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Cancelar',
-                style: TextStyle(color: textSecondary)),
+            child: Text('Cancelar', style: TextStyle(color: textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -6687,7 +8715,7 @@ class _AddProductState extends State<AddProductScreen> {
     {'name': 'Blanco', 'hex': '#FFFFFF'},
     {'name': 'Negro', 'hex': '#111111'},
     {'name': 'Gris', 'hex': '#808080'},
-    {'name': 'Plata', 'hex': '#C0C0C0'},
+    {'name': 'Silver', 'hex': '#C0C0C0'},
     {'name': 'Rojo', 'hex': '#E53935'},
     {'name': 'Naranja', 'hex': '#FB8C00'},
     {'name': 'Amarillo', 'hex': '#FDD835'},
@@ -6700,7 +8728,7 @@ class _AddProductState extends State<AddProductScreen> {
     {'name': 'Morado', 'hex': '#8E24AA'},
     {'name': 'Rosa', 'hex': '#EC407A'},
     {'name': 'Café / Cobre', 'hex': '#6D4C41'},
-    {'name': 'Dorado', 'hex': '#D4AF37'},
+    {'name': 'Oro', 'hex': '#D4AF37'},
     {'name': 'Beige / Piel', 'hex': '#D7C4A3'},
   ];
 
@@ -6733,8 +8761,7 @@ class _AddProductState extends State<AddProductScreen> {
       tareText.text =
           edit.tareWeight > 0 ? edit.tareWeight.toStringAsFixed(0) : '200';
 
-      priceText.text =
-          edit.price > 0 ? edit.price.toStringAsFixed(2) : '0.00';
+      priceText.text = edit.price > 0 ? edit.price.toStringAsFixed(2) : '0.00';
       diameter = edit.diameter;
 
       if (edit.tempNozzle != null) {
@@ -6779,9 +8806,6 @@ class _AddProductState extends State<AddProductScreen> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.itemToEdit != null;
-    final parsedPrice = double.tryParse(priceText.text) ?? 0.0;
-    final parsedGrams = double.tryParse(initialWeightText.text) ?? 1000.0;
-    final costPerGram = parsedGrams > 0 ? (parsedPrice / parsedGrams) : 0.0;
 
     return Scaffold(
       appBar: darkAppBar(
@@ -6789,493 +8813,467 @@ class _AddProductState extends State<AddProductScreen> {
         () => goBack(context),
       ),
       backgroundColor: bgBase,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              // 1. IDENTIFICACIÓN DEL MATERIAL
-              formCard(
-                title: '1. Identificación del Material',
-                subtitle: 'Marca, polímero y acabado de la bobina',
-                child: Column(
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          // 1. IDENTIFICACIÓN DEL MATERIAL
+          // 1. IDENTIFICACIÓN DEL MATERIAL
+          formCard(
+            title: '1. Identificación del Material',
+            subtitle: 'Marca, polímero y acabado de la bobina',
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final fieldWidth =
+                    (constraints.maxWidth * 0.25).clamp(180.0, 320.0);
+                return Wrap(
+                  spacing: 16,
+                  runSpacing: 14,
+                  crossAxisAlignment: WrapCrossAlignment.start,
                   children: [
-                    // Selector de Marca
-                    DropdownButtonFormField<String>(
-                      initialValue: customBrand ? '__custom' : brand,
-                      dropdownColor: surfaceElevated,
-                      style:
-                          const TextStyle(color: textPrimary, fontSize: 13),
-                      iconEnabledColor: textSecondary,
-                      items: [
-                        ...widget.vm.allBrands.map((b) =>
-                            DropdownMenuItem(value: b, child: Text(b))),
-                        const DropdownMenuItem(
-                            value: '__custom',
-                            child: Text('+ Otra marca (escribir)')),
-                      ],
-                      onChanged: (val) {
-                        setState(() {
-                          customBrand = val == '__custom';
-                          if (val != '__custom') {
-                            brand = val!;
-                          }
-                        });
-                      },
-                      decoration: fieldDecoration('Marca del fabricante',
-                          prefix: const Icon(
-                              Icons.branding_watermark_outlined,
-                              size: 16,
-                              color: textSecondary)),
-                    ),
-                    if (customBrand) ...[
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: brandText,
-                        style: const TextStyle(
-                            color: textPrimary, fontSize: 13),
-                        decoration: fieldDecoration(
-                          'Nombre de la marca',
-                          hint: 'Ej: Polymaker, eSun, Sunlu...',
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 14),
-
-                    // Selector de Material / Polímero
-                    DropdownButtonFormField<String>(
-                      initialValue:
-                          customMaterial ? '__custom' : material,
-                      dropdownColor: surfaceElevated,
-                      style:
-                          const TextStyle(color: textPrimary, fontSize: 13),
-                      iconEnabledColor: textSecondary,
-                      items: [
-                        ...widget.vm.materialCatalog.map((m) =>
-                            DropdownMenuItem(
-                                value: m.nombre, child: Text(m.nombre))),
-                        const DropdownMenuItem(
-                            value: '__custom',
-                            child: Text('+ Otro polímero (escribir)')),
-                      ],
-                      onChanged: (val) {
-                        setState(() {
-                          customMaterial = val == '__custom';
-                          if (val != '__custom') {
-                            material = val!;
-                          }
-                        });
-                      },
-                      decoration: fieldDecoration('Tipo de polímero',
-                          prefix: const Icon(Icons.category_outlined,
-                              size: 16, color: textSecondary)),
-                    ),
-                    if (customMaterial) ...[
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: materialText,
-                        style: const TextStyle(
-                            color: textPrimary, fontSize: 13),
-                        decoration: fieldDecoration(
-                          'Nombre del material o compuesto',
-                          hint: 'Ej: PETG-CF, ASA, TPU 95A...',
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 14),
-
-                    // Acabado / Variante
-                    DropdownButtonFormField<String>(
-                      initialValue: finish,
-                      dropdownColor: surfaceElevated,
-                      style:
-                          const TextStyle(color: textPrimary, fontSize: 13),
-                      iconEnabledColor: textSecondary,
-                      items: InventoryViewModel.defaultFinishes
-                          .map((f) =>
-                              DropdownMenuItem(value: f, child: Text(f)))
-                          .toList(),
-                      onChanged: (val) {
-                        if (val != null) setState(() => finish = val);
-                      },
-                      decoration: fieldDecoration('Acabado o variante visual',
-                          prefix: const Icon(Icons.auto_awesome_outlined,
-                              size: 16, color: textSecondary)),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // 2. COLOR Y ASPECTO VISUAL
-              formCard(
-                title: '2. Color del Filamento',
-                subtitle:
-                    'Selecciona el tono de la paleta y nombra el color',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Malla de colores rápidos
-                    const Text(
-                      'Tono visual de la bobina:',
-                      style: TextStyle(
-                          color: textSecondary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _recommendedColors.map((c) {
-                        final hex = c['hex']!;
-                        final isSelected =
-                            colorHex.toUpperCase() == hex.toUpperCase();
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              colorHex = hex;
-                              color = c['name']!;
-                              colorText.text = c['name']!;
-                            });
-                          },
-                          child: Tooltip(
-                            message: c['name']!,
-                            child: Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: parseHex(hex),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isSelected
-                                      ? accentPetrol
-                                      : borderStrong,
-                                  width: isSelected ? 2.5 : 1.0,
-                                ),
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: accentPetrol
-                                              .withValues(alpha: 0.4),
-                                          blurRadius: 6,
-                                        ),
-                                      ]
-                                    : null,
+                    // Selector de Marca (cuarta parte)
+                    SizedBox(
+                      width: fieldWidth,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          DropdownButtonFormField<String>(
+                            isExpanded: true,
+                            initialValue: customBrand ? '__custom' : brand,
+                            dropdownColor: surfaceElevated,
+                            style: TextStyle(color: textPrimary, fontSize: 13),
+                            iconEnabledColor: textSecondary,
+                            items: [
+                              ...widget.vm.allBrands.map((b) =>
+                                  DropdownMenuItem(
+                                      value: b,
+                                      child: Text(b,
+                                          overflow: TextOverflow.ellipsis))),
+                              const DropdownMenuItem(
+                                  value: '__custom',
+                                  child: Text('+ Otra marca',
+                                      overflow: TextOverflow.ellipsis)),
+                            ],
+                            onChanged: (val) {
+                              setState(() {
+                                customBrand = val == '__custom';
+                                if (val != '__custom') {
+                                  brand = val!;
+                                }
+                              });
+                            },
+                            decoration: fieldDecoration('Marca del fabricante',
+                                prefix: Icon(Icons.branding_watermark_outlined,
+                                    size: 16, color: textSecondary)),
+                          ),
+                          if (customBrand) ...[
+                            const SizedBox(height: 10),
+                            TextField(
+                              controller: brandText,
+                              style:
+                                  TextStyle(color: textPrimary, fontSize: 13),
+                              decoration: fieldDecoration(
+                                'Nombre de la marca',
+                                hint: 'Ej: Polymaker, eSun...',
                               ),
                             ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Nombre del color
-                    TextField(
-                      controller: colorText,
-                      onChanged: (x) => color = x,
-                      style:
-                          const TextStyle(color: textPrimary, fontSize: 13),
-                      decoration: fieldDecoration(
-                        'Nombre comercial del color',
-                        hint: 'Ej: Rojo Carmesí, Gris Galáctico...',
-                        prefix: Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: colorSwatchCircle(parseHex(colorHex),
-                              size: 12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // 3. PESO, CAPACIDAD Y TARA
-              formCard(
-                title: '3. Capacidad y Pesaje',
-                subtitle:
-                    'Gramos netos de la bobina y tara para báscula de taller',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Botones rápidos para peso inicial
-                    const Text(
-                      'Capacidad inicial estándar:',
-                      style: TextStyle(
-                          color: textSecondary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      children: ['250', '500', '750', '1000', '2500'].map((g) {
-                        return ActionChip(
-                          label: Text('$g g'),
-                          labelStyle: const TextStyle(
-                              color: textPrimary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600),
-                          backgroundColor: surfaceElevated,
-                          side: const BorderSide(color: borderSubtle),
-                          onPressed: () {
-                            setState(() {
-                              initialWeightText.text = g;
-                              if (!isEditing) {
-                                currentWeightText.text = g;
-                              }
-                            });
-                          },
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 12),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: initialWeightText,
-                            keyboardType: TextInputType.number,
-                            onChanged: (_) => setState(() {}),
-                            style: const TextStyle(
-                                color: textPrimary, fontSize: 13),
-                            decoration: fieldDecoration(
-                              'Peso inicial (g)',
-                              hint: '1000',
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: currentWeightText,
-                            keyboardType:
-                                const TextInputType.numberWithOptions(
-                                    decimal: true),
-                            style: const TextStyle(
-                                color: textPrimary, fontSize: 13),
-                            decoration: fieldDecoration(
-                              'Peso actual disponible (g)',
-                              hint: '1000',
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    TextField(
-                      controller: tareText,
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
-                      style:
-                          const TextStyle(color: textPrimary, fontSize: 13),
-                      decoration: fieldDecoration(
-                        'Tara del carrete plástico vacío (opcional)',
-                        hint: 'Ej: 200 (promedio de carretes plásticos)',
-                        suffix: const Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 12),
-                          child: Text('gramos',
-                              style: TextStyle(
-                                  color: textSecondary, fontSize: 12)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // 4. COSTO Y RENTABILIDAD
-              formCard(
-                title: '4. Costos y Precios',
-                subtitle:
-                    'Permite calcular el costo real por gramo en tus impresiones',
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: priceText,
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
-                      onChanged: (_) => setState(() {}),
-                      style:
-                          const TextStyle(color: textPrimary, fontSize: 13),
-                      decoration: fieldDecoration(
-                        'Precio de compra de la bobina',
-                        hint: '22.00',
-                        prefix: const Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 12),
-                          child: Text('\$',
-                              style: TextStyle(
-                                  color: textPrimary,
-                                  fontWeight: FontWeight.w700)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: surfaceElevated,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: borderSubtle),
-                      ),
-                      child: Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Costo unitario calculado:',
-                            style: TextStyle(
-                                color: textSecondary, fontSize: 12),
-                          ),
-                          Text(
-                            '\$${costPerGram.toStringAsFixed(4)} / gramo',
-                            style: const TextStyle(
-                              color: semanticSuccess,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
 
-              // 5. PARÁMETROS TÉCNICOS Y UBICACIÓN
-              formCard(
-                title: '5. Parámetros Técnicos y Ubicación',
-                subtitle:
-                    'Diámetro, temperaturas y posición de almacenamiento',
-                child: Column(
-                  children: [
-                    // Diámetro segmentado
-                    Row(
-                      children: [
-                        const Text(
-                          'Diámetro:',
-                          style: TextStyle(
-                              color: textSecondary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(width: 14),
-                        ChoiceChip(
-                          label: const Text('1.75 mm (Estándar)'),
-                          selected: diameter == 1.75,
-                          onSelected: (sel) {
-                            if (sel) setState(() => diameter = 1.75);
-                          },
-                          selectedColor: accentPetrol,
-                          labelStyle: TextStyle(
-                            color:
-                                diameter == 1.75 ? textPrimary : textSecondary,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 11,
+                    // Selector de Material / Polímero (cuarta parte)
+                    SizedBox(
+                      width: fieldWidth,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          DropdownButtonFormField<String>(
+                            isExpanded: true,
+                            initialValue: customMaterial ? '__custom' : material,
+                            dropdownColor: surfaceElevated,
+                            style: TextStyle(color: textPrimary, fontSize: 13),
+                            iconEnabledColor: textSecondary,
+                            items: [
+                              ...widget.vm.materialCatalog.map((m) =>
+                                  DropdownMenuItem(
+                                      value: m.nombre,
+                                      child: Text(m.nombre,
+                                          overflow: TextOverflow.ellipsis))),
+                              const DropdownMenuItem(
+                                  value: '__custom',
+                                  child: Text('+ Otro polímero',
+                                      overflow: TextOverflow.ellipsis)),
+                            ],
+                            onChanged: (val) {
+                              setState(() {
+                                customMaterial = val == '__custom';
+                                if (val != '__custom') {
+                                  material = val!;
+                                }
+                              });
+                            },
+                            decoration: fieldDecoration('Tipo de polímero',
+                                prefix: Icon(Icons.category_outlined,
+                                    size: 16, color: textSecondary)),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        ChoiceChip(
-                          label: const Text('2.85 mm'),
-                          selected: diameter == 2.85,
-                          onSelected: (sel) {
-                            if (sel) setState(() => diameter = 2.85);
-                          },
-                          selectedColor: accentPetrol,
-                          labelStyle: TextStyle(
-                            color:
-                                diameter == 2.85 ? textPrimary : textSecondary,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: nozzleTempText,
-                            keyboardType: TextInputType.number,
-                            style: const TextStyle(
-                                color: textPrimary, fontSize: 13),
-                            decoration: fieldDecoration(
-                              'Temp. Boquilla (°C)',
-                              hint: '210',
-                              prefix: const Icon(Icons.thermostat_outlined,
-                                  size: 16, color: textSecondary),
+                          if (customMaterial) ...[
+                            const SizedBox(height: 10),
+                            TextField(
+                              controller: materialText,
+                              style:
+                                  TextStyle(color: textPrimary, fontSize: 13),
+                              decoration: fieldDecoration(
+                                'Nombre del material',
+                                hint: 'Ej: PETG-CF, ASA...',
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: bedTempText,
-                            keyboardType: TextInputType.number,
-                            style: const TextStyle(
-                                color: textPrimary, fontSize: 13),
-                            decoration: fieldDecoration(
-                              'Temp. Cama (°C)',
-                              hint: '60',
-                              prefix: const Icon(Icons.layers_outlined,
-                                  size: 16, color: textSecondary),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    TextField(
-                      controller: locationText,
-                      style:
-                          const TextStyle(color: textPrimary, fontSize: 13),
-                      decoration: fieldDecoration(
-                        'Ubicación / Almacenamiento',
-                        hint: 'Ej: Caja Seca 1, Estante B, Bolsa con desecante...',
-                        prefix: const Icon(Icons.place_outlined,
-                            size: 16, color: textSecondary),
+                          ],
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 12),
 
-                    TextField(
-                      controller: notesText,
-                      style:
-                          const TextStyle(color: textPrimary, fontSize: 13),
-                      decoration: fieldDecoration(
-                        'Notas adicionales o número de lote',
-                        hint: 'Ej: Secado recomendado 6h a 45°C...',
-                        prefix: const Icon(Icons.notes_outlined,
-                            size: 16, color: textSecondary),
+                    // Acabado / Variante (cuarta parte)
+                    SizedBox(
+                      width: fieldWidth,
+                      child: DropdownButtonFormField<String>(
+                        isExpanded: true,
+                        initialValue: finish,
+                        dropdownColor: surfaceElevated,
+                        style: TextStyle(color: textPrimary, fontSize: 13),
+                        iconEnabledColor: textSecondary,
+                        items: InventoryViewModel.defaultFinishes
+                            .map((f) => DropdownMenuItem(
+                                value: f,
+                                child: Text(f,
+                                    overflow: TextOverflow.ellipsis)))
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null) setState(() => finish = val);
+                        },
+                        decoration: fieldDecoration('Acabado o variante visual',
+                            prefix: Icon(Icons.auto_awesome_outlined,
+                                size: 16, color: textSecondary)),
                       ),
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Botón de Guardar
-              techButton(
-                isEditing ? 'ACTUALIZAR FICHA DE BOBINA' : 'GUARDAR BOBINA EN INVENTARIO',
-                _save,
-                icon: Icons.save_outlined,
-                height: 48,
-              ),
-            ],
+                );
+              },
+            ),
           ),
-        ),
+          const SizedBox(height: 16),
+
+          // 2. COLOR Y ASPECTO VISUAL
+          formCard(
+            title: '2. Color del Filamento',
+            subtitle: 'Selecciona el tono de la paleta y nombra el color',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Malla de colores rápidos
+                Text(
+                  'Tono visual de la bobina:',
+                  style: TextStyle(
+                      color: textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _recommendedColors.map((c) {
+                    final hex = c['hex']!;
+                    final isSelected =
+                        colorHex.toUpperCase() == hex.toUpperCase();
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          colorHex = hex;
+                          color = c['name']!;
+                          colorText.text = c['name']!;
+                        });
+                      },
+                      child: Tooltip(
+                        message: c['name']!,
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: parseHex(hex),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isSelected ? accentPetrol : borderStrong,
+                              width: isSelected ? 2.5 : 1.0,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color:
+                                          accentPetrol.withValues(alpha: 0.4),
+                                      blurRadius: 6,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 14),
+
+                // Nombre del color (reducido a una tercera parte)
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final fieldWidth =
+                        (constraints.maxWidth * 0.333).clamp(220.0, 420.0);
+                    return SizedBox(
+                      width: fieldWidth,
+                      child: TextField(
+                        controller: colorText,
+                        onChanged: (x) {
+                          final entered = x.trim();
+                          final matchingPreset = _recommendedColors.firstWhere(
+                            (preset) =>
+                                preset['name']!.toLowerCase() ==
+                                entered.toLowerCase(),
+                            orElse: () => const <String, String>{},
+                          );
+                          final enteredHex = entered.startsWith('#')
+                              ? entered.substring(1)
+                              : entered;
+                          final isHex =
+                              (enteredHex.length == 6 ||
+                                      enteredHex.length == 8) &&
+                                  int.tryParse(enteredHex, radix: 16) != null;
+                          setState(() {
+                            color = x;
+                            if (matchingPreset.isNotEmpty) {
+                              colorHex = matchingPreset['hex']!;
+                            } else if (isHex) {
+                              colorHex = '#${enteredHex.toUpperCase()}';
+                            }
+                          });
+                        },
+                        style: TextStyle(color: textPrimary, fontSize: 13),
+                        decoration: fieldDecoration(
+                          'Nombre comercial del color',
+                          hint: 'Ej: Rojo Carmesí, Gris Galáctico...',
+                          prefix: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: KeyedSubtree(
+                              key: const ValueKey('product_color_preview'),
+                              child: colorSwatchCircle(
+                                parseHex(colorHex),
+                                size: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // 3. CAPACIDAD Y PESAJE
+          formCard(
+            title: '3. Capacidad y Pesaje',
+            subtitle: 'Gramos netos de la bobina y tara para báscula de taller',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Botones rápidos para peso inicial
+                Text(
+                  'Capacidad inicial estándar:',
+                  style: TextStyle(
+                      color: textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  children: ['250', '500', '750', '1000', '2500'].map((g) {
+                    return ActionChip(
+                      label: Text('$g g'),
+                      labelStyle: TextStyle(
+                          color: textPrimary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600),
+                      backgroundColor: surfaceElevated,
+                      side: BorderSide(color: borderSubtle),
+                      onPressed: () {
+                        setState(() {
+                          initialWeightText.text = g;
+                          if (!isEditing) {
+                            currentWeightText.text = g;
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 14),
+
+                // Campos visibles para 5 caracteres
+                Wrap(
+                  spacing: 24,
+                  runSpacing: 14,
+                  crossAxisAlignment: WrapCrossAlignment.start,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Peso inicial (g)',
+                          style: TextStyle(
+                            color: textSecondary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        SizedBox(
+                          width: 95,
+                          child: TextField(
+                            controller: initialWeightText,
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                            onChanged: (_) => setState(() {}),
+                            style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700),
+                            decoration: InputDecoration(
+                              hintText: '1000',
+                              hintStyle:
+                                  TextStyle(color: textMuted, fontSize: 13),
+                              filled: true,
+                              fillColor: surfaceElevated,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 10),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: borderSubtle),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: borderSubtle),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Peso actual disponible (g)',
+                          style: TextStyle(
+                            color: textSecondary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        SizedBox(
+                          width: 95,
+                          child: TextField(
+                            controller: currentWeightText,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700),
+                            decoration: InputDecoration(
+                              hintText: '1000',
+                              hintStyle:
+                                  TextStyle(color: textMuted, fontSize: 13),
+                              filled: true,
+                              fillColor: surfaceElevated,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 10),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: borderSubtle),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: borderSubtle),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Tara carrete plástico vacío (g)',
+                          style: TextStyle(
+                            color: textSecondary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        SizedBox(
+                          width: 95,
+                          child: TextField(
+                            controller: tareText,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700),
+                            decoration: InputDecoration(
+                              hintText: '200',
+                              hintStyle:
+                                  TextStyle(color: textMuted, fontSize: 13),
+                              filled: true,
+                              fillColor: surfaceElevated,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 10),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: borderSubtle),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: borderSubtle),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Botón de Guardar
+          techButton(
+            isEditing
+                ? 'ACTUALIZAR FICHA DE BOBINA'
+                : 'GUARDAR BOBINA EN INVENTARIO',
+            _save,
+            icon: Icons.save_outlined,
+            height: 48,
+          ),
+        ],
       ),
     );
   }
@@ -7291,12 +9289,14 @@ class _AddProductState extends State<AddProductScreen> {
         : color.trim();
 
     final initialGrams = double.tryParse(initialWeightText.text) ?? 0;
-    final currentGrams = double.tryParse(currentWeightText.text) ?? initialGrams;
+    final currentGrams =
+        double.tryParse(currentWeightText.text) ?? initialGrams;
     final tare = double.tryParse(tareText.text) ?? 0;
     final price = double.tryParse(priceText.text) ?? 0;
     final nozzle = int.tryParse(nozzleTempText.text);
     final bed = int.tryParse(bedTempText.text);
-    final location = locationText.text.trim().isEmpty ? null : locationText.text.trim();
+    final location =
+        locationText.text.trim().isEmpty ? null : locationText.text.trim();
     final notes = notesText.text.trim().isEmpty ? null : notesText.text.trim();
 
     if (finalBrand.isEmpty) {

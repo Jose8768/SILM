@@ -5,8 +5,9 @@
       "name": "Voxelcost3D: Windows",
       "request": "launch",
       "type": "dart",
-      "cwd": "${workspaceFolder}",
-      "program": "lib/main.dart",
+      "cwd": "C:\\VX3D",
+      "program": "C:\\VX3D\\lib\\main.dart",
+      "preLaunchTask": "Preparar proyecto Windows",
       "deviceId": "windows"
     },
     {
