@@ -7,6 +7,8 @@ class MaterialData {
   int color;
   String? colorName;
   bool combine;
+  String? brand;
+  String? finish;
 
   MaterialData({
     required this.type,
@@ -14,6 +16,8 @@ class MaterialData {
     required this.color,
     this.colorName,
     this.combine = true,
+    this.brand,
+    this.finish,
   });
 
   Map<String, dynamic> toJson() => {
@@ -22,6 +26,8 @@ class MaterialData {
         'color': color,
         'colorName': colorName,
         'combine': combine,
+        'brand': brand,
+        'finish': finish,
       };
 
   factory MaterialData.fromJson(Map<String, dynamic> json) => MaterialData(
@@ -30,6 +36,8 @@ class MaterialData {
         color: json['color'] as int,
         colorName: json['colorName'] as String?,
         combine: json['combine'] as bool? ?? true,
+        brand: json['brand'] as String?,
+        finish: json['finish'] as String?,
       );
 }
 

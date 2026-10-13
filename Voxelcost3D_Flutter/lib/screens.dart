@@ -2716,6 +2716,37 @@ class _PrinterFormEntry {
   }
 }
 
+const List<String> kMaterialBrands = [
+  'eSun',
+  'Sunlu',
+  'Polymaker',
+  'Creality',
+  'Bambu Lab',
+  'Overture',
+  'Prusament',
+  'Anycubic',
+  'Flashforge',
+  'Printalot',
+  'GST3D',
+  'Hatchbox',
+  'Kingroon',
+  'Genérica',
+  '+ Otra marca',
+];
+
+const List<String> kMaterialFinishes = [
+  'Estándar',
+  'Silk (Seda)',
+  'Mate',
+  'Glitter / Brillante',
+  'Fibra de Carbono',
+  'Transparente',
+  'Madera / Wood',
+  'Mármol / Marble',
+  'Glow in Dark',
+  'Otro',
+];
+
 class _FormState extends State<PrintFormScreen> {
   late final InventoryViewModel inventoryVm;
   bool _ownsInvVm = false;
@@ -2939,7 +2970,9 @@ class _FormState extends State<PrintFormScreen> {
                 m.color,
                 m.colorName ?? '',
                 m.combine,
-                customType: types.contains(m.type) ? '' : m.type))
+                customType: types.contains(m.type) ? '' : m.type,
+                brandText: m.brand ?? '',
+                finishText: m.finish ?? ''))
             .toList() ??
         [
           _MaterialForm('PLA', '', null, '', true),
@@ -4286,8 +4319,115 @@ class _FormState extends State<PrintFormScreen> {
                   onChanged: (_) => setState(() {}),
                 ),
               ),
+              // Marca del material (opciones con selector)
+              SizedBox(
+                width: 155,
+                child: DropdownButtonFormField<String?>(
+                  key: ValueKey('brand_${index}_${m.selectedBrand}'),
+                  initialValue: m.selectedBrand,
+                  isExpanded: true,
+                  dropdownColor: surfaceElevated,
+                  style: TextStyle(color: textPrimary, fontSize: 13),
+                  iconEnabledColor: textSecondary,
+                  hint: Text(
+                    'Seleccionar...',
+                    style: TextStyle(color: textMuted, fontSize: 13),
+                  ),
+                  decoration: fieldDecoration('Marca'),
+                  items: [
+                    DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text(
+                        'Sin especificar',
+                        style: TextStyle(color: textMuted, fontSize: 12),
+                      ),
+                    ),
+                    ...kMaterialBrands.map((b) =>
+                        DropdownMenuItem<String?>(
+                          value: b,
+                          child: Text(
+                            b,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: b == '+ Otra marca'
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                              color: b == '+ Otra marca'
+                                  ? accentPetrol
+                                  : textPrimary,
+                            ),
+                          ),
+                        )),
+                  ],
+                  onChanged: (val) => setState(() => m.selectedBrand = val),
+                ),
+              ),
+              // Acabado del material (opciones con selector)
+              SizedBox(
+                width: 175,
+                child: DropdownButtonFormField<String?>(
+                  key: ValueKey('finish_${index}_${m.selectedFinish}'),
+                  initialValue: m.selectedFinish,
+                  isExpanded: true,
+                  dropdownColor: surfaceElevated,
+                  style: TextStyle(color: textPrimary, fontSize: 13),
+                  iconEnabledColor: textSecondary,
+                  hint: Text(
+                    'Seleccionar...',
+                    style: TextStyle(color: textMuted, fontSize: 13),
+                  ),
+                  decoration: fieldDecoration('Acabado'),
+                  items: [
+                    DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text(
+                        'Sin especificar',
+                        style: TextStyle(color: textMuted, fontSize: 12),
+                      ),
+                    ),
+                    ...kMaterialFinishes.map((f) =>
+                        DropdownMenuItem<String?>(
+                          value: f,
+                          child: Text(f, style: const TextStyle(fontSize: 12)),
+                        )),
+                  ],
+                  onChanged: (val) => setState(() => m.selectedFinish = val),
+                ),
+              ),
             ],
           ),
+          if (m.selectedBrand == '+ Otra marca' ||
+              m.selectedFinish == 'Otro') ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 12,
+              runSpacing: 10,
+              children: [
+                if (m.selectedBrand == '+ Otra marca')
+                  SizedBox(
+                    width: 220,
+                    child: TextField(
+                      controller: m.customBrand,
+                      style: TextStyle(color: textPrimary, fontSize: 13),
+                      decoration:
+                          fieldDecoration('Marca personalizada *'),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+                if (m.selectedFinish == 'Otro')
+                  SizedBox(
+                    width: 220,
+                    child: TextField(
+                      controller: m.customFinish,
+                      style: TextStyle(color: textPrimary, fontSize: 13),
+                      decoration:
+                          fieldDecoration('Acabado personalizado *'),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+              ],
+            ),
+          ],
           if (m.type == 'Otro') ...[
             const SizedBox(height: 10),
             SizedBox(
@@ -4491,12 +4631,16 @@ class _FormState extends State<PrintFormScreen> {
             '$type (${m.colorName.isNotEmpty ? m.colorName : 'Color'}): requiere ${totalBatch.toStringAsFixed(1)}g ($g g × $totalPrinters ${totalPrinters == 1 ? 'impresora' : 'impresoras'}) pero solo hay ${avail.toStringAsFixed(1)}g en inventario');
       }
 
+      final brandVal = m.finalBrand;
+      final finishVal = m.finalFinish;
       result.add(MaterialData(
         type: type,
         grams: g,
         color: m.color ?? 0xFF808080,
         colorName: m.colorName.isEmpty ? null : m.colorName,
         combine: m.combine,
+        brand: brandVal.isNotEmpty ? brandVal : null,
+        finish: finishVal.isNotEmpty ? finishVal : null,
       ));
     }
 
@@ -4693,8 +4837,13 @@ class _FormState extends State<PrintFormScreen> {
 class _MaterialForm {
   String type, customType, colorName;
   final TextEditingController grams;
+  String? selectedBrand;
+  final TextEditingController customBrand;
+  String? selectedFinish;
+  final TextEditingController customFinish;
   int? color;
   bool combine;
+
   _MaterialForm(
     this.type,
     String gramsText,
@@ -4702,8 +4851,52 @@ class _MaterialForm {
     this.colorName,
     this.combine, {
     this.customType = '',
-  }) : grams = TextEditingController(text: gramsText);
-  void dispose() => grams.dispose();
+    String brandText = '',
+    String finishText = '',
+  })  : grams = TextEditingController(text: gramsText),
+        customBrand = TextEditingController(),
+        customFinish = TextEditingController() {
+    // Inicializar Marca
+    if (brandText.trim().isNotEmpty) {
+      final b = brandText.trim();
+      if (kMaterialBrands.contains(b)) {
+        selectedBrand = b;
+      } else {
+        selectedBrand = '+ Otra marca';
+        customBrand.text = b;
+      }
+    }
+    // Inicializar Acabado
+    if (finishText.trim().isNotEmpty) {
+      final f = finishText.trim();
+      if (kMaterialFinishes.contains(f)) {
+        selectedFinish = f;
+      } else {
+        selectedFinish = 'Otro';
+        customFinish.text = f;
+      }
+    }
+  }
+
+  String get finalBrand {
+    if (selectedBrand == '+ Otra marca') {
+      return customBrand.text.trim();
+    }
+    return selectedBrand?.trim() ?? '';
+  }
+
+  String get finalFinish {
+    if (selectedFinish == 'Otro') {
+      return customFinish.text.trim();
+    }
+    return selectedFinish?.trim() ?? '';
+  }
+
+  void dispose() {
+    grams.dispose();
+    customBrand.dispose();
+    customFinish.dispose();
+  }
 }
 
 // ==========================================
@@ -6397,30 +6590,36 @@ class _ExportState extends State<ExportScreen> {
 
   Future<void> _saveBytes(List<int> bytes, String fileName, String mimeType,
       String extension) async {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.windows) {
-      await share_plus.SharePlus.instance.share(
-        share_plus.ShareParams(
-          files: [
-            share_plus.XFile.fromData(Uint8List.fromList(bytes),
-                mimeType: mimeType),
-          ],
-          fileNameOverrides: [fileName],
-          downloadFallbackEnabled: true,
-        ),
+    final isDesktop = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.linux ||
+            defaultTargetPlatform == TargetPlatform.windows ||
+            defaultTargetPlatform == TargetPlatform.macOS);
+
+    if (isDesktop) {
+      final location = await getSaveLocation(
+        suggestedName: fileName,
+        acceptedTypeGroups: [
+          XTypeGroup(
+              label: extension.toUpperCase(), extensions: [extension]),
+        ],
       );
+      if (location == null) return;
+      await XFile.fromData(Uint8List.fromList(bytes),
+              name: fileName, mimeType: mimeType)
+          .saveTo(location.path);
       return;
     }
 
-    final location = await getSaveLocation(
-      suggestedName: fileName,
-      acceptedTypeGroups: [
-        XTypeGroup(label: extension.toUpperCase(), extensions: [extension]),
-      ],
+    await share_plus.SharePlus.instance.share(
+      share_plus.ShareParams(
+        files: [
+          share_plus.XFile.fromData(Uint8List.fromList(bytes),
+              mimeType: mimeType),
+        ],
+        fileNameOverrides: [fileName],
+        downloadFallbackEnabled: true,
+      ),
     );
-    if (location == null) return;
-    await XFile.fromData(Uint8List.fromList(bytes),
-            name: fileName, mimeType: mimeType)
-        .saveTo(location.path);
   }
 
   @override
@@ -6696,57 +6895,223 @@ class _ExportState extends State<ExportScreen> {
     List<PrintRecord> prints,
     String title,
   ) async {
-    final excel = excel_pkg.Excel.createExcel();
-    final sheetSummary = excel['Resumen'];
-    sheetSummary.appendRow(_toExcelRow(['TITULO', title]));
-    sheetSummary
-        .appendRow(_toExcelRow(['PERIODO', 'PIEZAS TOTALES', 'CONSUMO TOTAL']));
-    for (final row in summaryRows) {
-      sheetSummary.appendRow(_toExcelRow(
-          [row.label, row.count, '${row.grams.toStringAsFixed(1)} g']));
+    excel_pkg.Excel excel;
+    String sheetName = 'Agosto- Diciembre 2026';
+
+    try {
+      final templateData =
+          await rootBundle.load('assets/cmi_template.xlsx');
+      final templateBytes = templateData.buffer.asUint8List();
+      excel = excel_pkg.Excel.decodeBytes(templateBytes);
+      if (excel.tables.isNotEmpty) {
+        sheetName = excel.tables.keys.first;
+      }
+    } catch (_) {
+      excel = excel_pkg.Excel.createExcel();
+      final defSheet = excel.getDefaultSheet();
+      if (defSheet != null && defSheet != sheetName) {
+        excel.rename(defSheet, sheetName);
+      }
     }
 
-    final sheetDetail = excel['Detalle Impresiones'];
-    sheetDetail.appendRow(_toExcelRow([
-      'FECHA',
-      'ACTIVO / PIEZA',
-      'SOLICITANTE',
-      'TIPO SOLICITANTE',
-      'NO. CONTROL / EMPLEADO',
-      'IMPRESORA',
-      'TIEMPO IMPRESIÓN',
-      'CATEGORÍA',
-      'MATERIAL Y COLOR',
-      'CANTIDAD',
-      'GRAMOS POR UNIDAD',
-      'GRAMOS TOTALES',
-      'OBSERVACIONES'
-    ]));
-    for (final r in prints) {
-      final matStr = r.materials.map((m) {
+    final sheet = excel[sheetName];
+
+    // Column widths matching the CMI template
+    final colWidths = [
+      10.88, // A
+      10.88, // B - Folio
+      10.88, // C - Fecha
+      10.88, // D - Solicitante
+      28.38, // E - Nombre
+      11.13, // F - No. Control - No. Empleado
+      37.00, // G - Proyecto
+      21.13, // H - Archivo
+      10.88, // I - Impresora Utilizada
+      12.88, // J - Tiempo de Impresión
+      17.38, // K - Consumo de Material (gr)
+      31.38, // L - Comentarios
+    ];
+    for (int i = 0; i < colWidths.length; i++) {
+      sheet.setColumnWidth(i, colWidths[i]);
+    }
+
+    // Encabezados institucionales B5 y B6 (en negrita)
+    final cellB5 = sheet.cell(excel_pkg.CellIndex.indexByString('B5'));
+    cellB5.value =
+        excel_pkg.TextCellValue('Departamento de Ingeniería Industrial');
+    cellB5.cellStyle = (cellB5.cellStyle ?? excel_pkg.CellStyle()).copyWith(
+      boldVal: true,
+      fontSizeVal: 12,
+      fontFamilyVal: 'Aptos Narrow',
+      verticalAlignVal: excel_pkg.VerticalAlign.Center,
+      horizontalAlignVal: excel_pkg.HorizontalAlign.Left,
+    );
+
+    final cellB6 = sheet.cell(excel_pkg.CellIndex.indexByString('B6'));
+    cellB6.value = excel_pkg.TextCellValue(
+        'Centro de Manufactura Integral (Laboratorio 3D)');
+    cellB6.cellStyle = (cellB6.cellStyle ?? excel_pkg.CellStyle()).copyWith(
+      boldVal: true,
+      fontSizeVal: 12,
+      fontFamilyVal: 'Aptos Narrow',
+      verticalAlignVal: excel_pkg.VerticalAlign.Center,
+      horizontalAlignVal: excel_pkg.HorizontalAlign.Left,
+    );
+
+    // Color Azul, Énfasis 4, más oscuro 25% (#0B769F) y bordes negros
+    final headerColor = excel_pkg.ExcelColor.fromHexString('#0B769F');
+    final blackColor = excel_pkg.ExcelColor.fromHexString('#000000');
+
+    // Encabezados de tabla en fila 8 (índice 7)
+    final headerTitles = [
+      'Folio',
+      'Fecha',
+      'Solicitante',
+      'Nombre',
+      'No. Control - No. Empleado',
+      'Proyecto',
+      'Archivo',
+      'Impresora Utilizada',
+      'Tiempo de Impresión',
+      'Consumo de Material (gr)',
+      'Comentarios',
+    ];
+
+    for (int i = 0; i < headerTitles.length; i++) {
+      final cell = sheet.cell(excel_pkg.CellIndex.indexByColumnRow(
+          columnIndex: i + 1, rowIndex: 7));
+      cell.value = excel_pkg.TextCellValue(headerTitles[i]);
+      cell.cellStyle = excel_pkg.CellStyle(
+        bold: true,
+        fontSize: 11,
+        fontFamily: 'Aptos Narrow',
+        fontColorHex: excel_pkg.ExcelColor.fromHexString('#FFFFFF'),
+        backgroundColorHex: headerColor,
+        horizontalAlign: excel_pkg.HorizontalAlign.Center,
+        verticalAlign: excel_pkg.VerticalAlign.Center,
+        textWrapping: excel_pkg.TextWrapping.WrapText,
+        topBorder: excel_pkg.Border(
+          borderStyle: excel_pkg.BorderStyle.Thin,
+          borderColorHex: blackColor,
+        ),
+        leftBorder: excel_pkg.Border(
+          borderStyle: excel_pkg.BorderStyle.Thin,
+          borderColorHex: blackColor,
+        ),
+        rightBorder: excel_pkg.Border(
+          borderStyle: excel_pkg.BorderStyle.Thin,
+          borderColorHex: blackColor,
+        ),
+        bottomBorder: excel_pkg.Border(
+          borderStyle: excel_pkg.BorderStyle.Thin,
+          borderColorHex: blackColor,
+        ),
+      );
+    }
+
+    // Limpiar filas previas existentes en la plantilla a partir de la fila 9 (índice 8)
+    for (int r = 8; r < sheet.maxRows; r++) {
+      for (int c = 1; c <= 11; c++) {
+        sheet
+            .cell(excel_pkg.CellIndex.indexByColumnRow(
+                columnIndex: c, rowIndex: r))
+            .value = null;
+      }
+    }
+
+    // Poblar las filas seleccionadas con todos los bordes en color negro
+    for (int i = 0; i < prints.length; i++) {
+      final r = prints[i];
+      final rowIndex = 8 + i;
+      final folio = 'CMI-${(i + 1).toString().padLeft(3, '0')}';
+
+      final dt = DateTime.fromMillisecondsSinceEpoch(r.date);
+      final fechaStr =
+          '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+
+      final solicitante = r.requesterType ?? '';
+      final nombre = r.requesterName ?? '';
+      final noControl = r.requesterId ?? '';
+      final proyecto =
+          (r.projectName != null && r.projectName!.trim().isNotEmpty)
+              ? r.projectName!.trim()
+              : r.figureCategory;
+      final archivo = r.pieceType;
+      final impresora = r.printerName ?? '';
+      final tiempo = r.printTime ?? '';
+
+      final matSummary = r.materials.map((m) {
+        final totalGrams = m.grams * r.cantidad;
+        final grStr = (totalGrams == totalGrams.roundToDouble())
+            ? totalGrams.toStringAsFixed(0)
+            : totalGrams.toStringAsFixed(2);
         final cName = (m.colorName != null && m.colorName!.trim().isNotEmpty)
-            ? m.colorName!
-            : findVoxelColor(value: m.color).name;
-        return '${m.type} ($cName)';
+            ? m.colorName!.trim()
+            : '';
+        final mType = m.type.trim();
+        final finishStr = (m.finish != null && m.finish!.trim().isNotEmpty)
+            ? m.finish!.trim()
+            : '';
+        final brandStr = (m.brand != null && m.brand!.trim().isNotEmpty)
+            ? m.brand!.trim()
+            : '';
+        final descParts = [
+          mType,
+          if (finishStr.isNotEmpty) finishStr,
+          if (cName.isNotEmpty) cName,
+          if (brandStr.isNotEmpty) brandStr,
+        ];
+        final detail = descParts.join(' ');
+        return '${grStr}g de $detail';
       }).join(', ');
-      final date = DateTime.fromMillisecondsSinceEpoch(r.date);
-      final dateStr =
-          '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-      sheetDetail.appendRow(_toExcelRow([
-        dateStr,
-        r.pieceType,
-        r.requesterName ?? '',
-        r.requesterType ?? '',
-        r.requesterId ?? '',
-        r.printerName ?? '',
-        r.printTime ?? '',
-        r.figureCategory,
-        matStr,
-        r.cantidad,
-        '${r.unitGrams.toStringAsFixed(1)} g',
-        '${r.totalGrams.toStringAsFixed(1)} g',
-        r.notes ?? ''
-      ]));
+
+      final comentarios = r.notes ?? '';
+
+      final rowValues = [
+        folio,
+        fechaStr,
+        solicitante,
+        nombre,
+        noControl,
+        proyecto,
+        archivo,
+        impresora,
+        tiempo,
+        matSummary,
+        comentarios,
+      ];
+
+      for (int c = 0; c < rowValues.length; c++) {
+        final colIndex = c + 1;
+        final cell = sheet.cell(excel_pkg.CellIndex.indexByColumnRow(
+            columnIndex: colIndex, rowIndex: rowIndex));
+        cell.value = excel_pkg.TextCellValue(rowValues[c]);
+        cell.cellStyle = excel_pkg.CellStyle(
+          fontSize: 12,
+          fontFamily: 'Aptos Narrow',
+          textWrapping: excel_pkg.TextWrapping.WrapText,
+          verticalAlign: excel_pkg.VerticalAlign.Center,
+          horizontalAlign: (colIndex == 1)
+              ? excel_pkg.HorizontalAlign.Center
+              : excel_pkg.HorizontalAlign.Left,
+          leftBorder: excel_pkg.Border(
+            borderStyle: excel_pkg.BorderStyle.Thin,
+            borderColorHex: blackColor,
+          ),
+          rightBorder: excel_pkg.Border(
+            borderStyle: excel_pkg.BorderStyle.Thin,
+            borderColorHex: blackColor,
+          ),
+          topBorder: excel_pkg.Border(
+            borderStyle: excel_pkg.BorderStyle.Thin,
+            borderColorHex: blackColor,
+          ),
+          bottomBorder: excel_pkg.Border(
+            borderStyle: excel_pkg.BorderStyle.Thin,
+            borderColorHex: blackColor,
+          ),
+        );
+      }
     }
 
     final bytes = excel.encode();
@@ -6756,13 +7121,14 @@ class _ExportState extends State<ExportScreen> {
 
     final cleanPeriod = period.toLowerCase().replaceAll(' ', '_');
     final fileName =
-        'voxelcost3d_${cleanPeriod}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+        'CMI_${cleanPeriod}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
     await _saveBytes(
         bytes,
         fileName,
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'xlsx');
   }
+
 
   Future<void> _saveInventoryPdf(List<List<String>> rows) async {
     final pdf = pw.Document();
@@ -6853,9 +7219,10 @@ class _ExportState extends State<ExportScreen> {
       }
       if (!context.mounted) return;
       toast(context, 'Archivo $format exportado correctamente');
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('Export error ($format): $e\n$st');
       if (!context.mounted) return;
-      toast(context, 'Error al generar el archivo $format', isError: true);
+      toast(context, 'Error al generar el archivo $format: $e', isError: true);
     }
   }
 
