@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -21,10 +22,10 @@ class PedidoMaterialesWidget extends StatefulWidget {
   });
 
   @override
-  State<PedidoMaterialesWidget> createState() => _PedidoMaterialesWidgetState();
+  State<PedidoMaterialesWidget> createState() => PedidoMaterialesWidgetState();
 }
 
-class _PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
+class PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
   static const _storageKey = 'pedido_materiales_widget_v1';
   static const _otro = 'Otro (escribir)';
   static const _defaultMaterials = [
@@ -65,6 +66,31 @@ class _PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
   bool _loading = true;
   bool _saving = false;
   String? _storageError;
+
+  void prefillOrder({
+    required String material,
+    required String color,
+    double? spoolGrams,
+  }) {
+    setState(() {
+      _expanded = true;
+      final draft = _orderDrafts.first;
+      _mergeUnique(_materials, [material]);
+      draft.selectedMaterial = material;
+      _mergeUnique(_colors, [color]);
+      draft.selectedColor = color;
+      if (spoolGrams != null && spoolGrams > 0) {
+        draft.spoolWeightController.text = '${spoolGrams.toInt()} g';
+      }
+      draft.selectedUrgency = 'Rojo';
+      draft.urgencyTypeController.text = 'Reposición de inventario';
+      draft.urgencyDetailsController.text =
+          'Bobina agotada o con stock bajo en laboratorio';
+    });
+    _showMessage(
+      'Se cargó $material ($color) en el formulario de pedido.',
+    );
+  }
 
   @override
   void initState() {
@@ -532,36 +558,75 @@ class _PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: SizedBox(
-            height: 38,
-            child: ElevatedButton.icon(
-              onPressed: () => setState(() => _expanded = !_expanded),
-              icon: Icon(
-                _expanded ? Icons.close_rounded : Icons.add_rounded,
-                size: 18,
-              ),
-              label: Text(
-                _expanded ? 'Cerrar formulario de pedido' : 'Nuevo pedido',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+        if (!_expanded)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SizedBox(
+              height: 40,
+              child: ElevatedButton.icon(
+                onPressed: () => setState(() => _expanded = true),
+                icon: const Icon(
+                  Icons.add_rounded,
+                  size: 18,
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.primary,
-                foregroundColor: colors.onPrimary,
-                elevation: 2,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                label: const Text(
+                  'Nuevo pedido',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colors.primary,
+                  foregroundColor: colors.onPrimary,
+                  elevation: 1,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ),
+          )
+        else
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Nuevo pedido',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => setState(() => _expanded = false),
+                icon: const Icon(
+                  Icons.close_rounded,
+                  size: 16,
+                ),
+                label: const Text(
+                  'Cerrar formulario de pedido',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onSurface,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
         if (_expanded) ...[
           const SizedBox(height: 14),
           _buildForm(context, maxWidth),
@@ -816,10 +881,26 @@ class _PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
           label: 'Link de la página donde se encontró el material',
           hint: 'https://...',
           keyboardType: TextInputType.url,
-          suffixIcon: IconButton(
-            tooltip: 'Abrir página web',
-            onPressed: () => _openPageLink(draft.linkController.text),
-            icon: const Icon(Icons.open_in_browser_rounded),
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: 'Pegar enlace',
+                onPressed: () async {
+                  final data = await Clipboard.getData(Clipboard.kTextPlain);
+                  if (data?.text != null && data!.text!.trim().isNotEmpty) {
+                    draft.linkController.text = data.text!.trim();
+                    setState(() {});
+                  }
+                },
+                icon: const Icon(Icons.content_paste_rounded, size: 20),
+              ),
+              IconButton(
+                tooltip: 'Abrir página web',
+                onPressed: () => _openPageLink(draft.linkController.text),
+                icon: const Icon(Icons.open_in_browser_rounded, size: 20),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 20),
@@ -869,14 +950,26 @@ class _PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
         if (draftIndex == _orderDrafts.length - 1)
           Align(
             alignment: Alignment.centerLeft,
-            child: TextButton.icon(
+            child: OutlinedButton.icon(
               key: ValueKey('add_order_draft_$draftIndex'),
               onPressed: () => setState(() => _orderDrafts.add(_OrderDraft())),
-              icon: const Icon(Icons.add_rounded),
+              icon: const Icon(Icons.add_rounded, size: 18),
               label: const Text('Agregar otro pedido'),
+              style: OutlinedButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
             ),
           ),
         if (draftIndex == _orderDrafts.length - 1) ...[
+          const SizedBox(height: 24),
+          Divider(
+            height: 1,
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
           const SizedBox(height: 20),
           _formSectionTitle(context, 'Urgencia en el laboratorio'),
           Wrap(
@@ -885,54 +978,37 @@ class _PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
             children: [field(_urgencyDropdown(context, sharedDraft))],
           ),
           if (sharedDraft.selectedUrgency != null) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: _urgencyColor(context, sharedDraft.selectedUrgency!)
-                    .withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _urgencyColor(context, sharedDraft.selectedUrgency!)
-                      .withValues(alpha: 0.25),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                field(
+                  _textInput(
+                    context,
+                    controller: sharedDraft.urgencyTypeController,
+                    label: 'Tipo de urgencia',
+                    hint: 'Ej. Reposición urgente',
+                  ),
+                  width: detailFieldWidth,
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Detalles de la urgencia',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                field(
+                  _textInput(
+                    context,
+                    controller: sharedDraft.urgencyDetailsController,
+                    label: 'Urgencia en texto',
+                    hint: 'Ej. Falta para la entrega de mañana',
                   ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      field(
-                          _textInput(
-                            context,
-                            controller: sharedDraft.urgencyTypeController,
-                            label: 'Tipo de urgencia',
-                            hint: 'Ej. Reposición urgente',
-                          ),
-                          width: detailFieldWidth),
-                      field(
-                          _textInput(
-                            context,
-                            controller: sharedDraft.urgencyDetailsController,
-                            label: 'Urgencia en texto',
-                            hint: 'Ej. Falta para la entrega de mañana',
-                          ),
-                          width: detailFieldWidth),
-                    ],
-                  ),
-                ],
-              ),
+                  width: detailFieldWidth,
+                ),
+              ],
             ),
           ],
+          const SizedBox(height: 24),
+          Divider(
+            height: 1,
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
           const SizedBox(height: 20),
           _formSectionTitle(context, 'Consumibles'),
           ...sharedDraft.consumableForms.asMap().entries.map((entry) {
@@ -993,6 +1069,11 @@ class _PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
                 label: const Text('Agregar otro consumible'),
               ),
             ],
+          ),
+          const SizedBox(height: 24),
+          Divider(
+            height: 1,
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
           ),
           const SizedBox(height: 20),
           _formSectionTitle(context, 'Costo del material'),
@@ -1133,19 +1214,15 @@ class _PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
               hint: hint,
               keyboardType: TextInputType.text,
             ),
-            const SizedBox(height: 4),
-            Text(
-              value.text.trim().isEmpty
-                  ? 'Opcional'
-                  : grams == null
-                      ? 'No entendí el peso'
-                      : '= ${_formatWeight(grams)}',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: grams == null && value.text.trim().isNotEmpty
-                    ? theme.colorScheme.error
-                    : theme.colorScheme.onSurfaceVariant,
+            if (value.text.trim().isNotEmpty && grams != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                '= ${_formatWeight(grams)}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
+            ],
           ],
         );
       },
@@ -1413,38 +1490,68 @@ class _PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
                       ),
                       const SizedBox(width: 8),
                       Text(level),
+                      const SizedBox(width: 6),
+                      Text(
+                        level == 'Rojo'
+                            ? '· Alta / Crítica'
+                            : level == 'Amarillo'
+                                ? '· Media'
+                                : '· Baja',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: 12,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
                     ],
                   ),
+                ),
+              )
+              .toList(),
+          selectedItemBuilder: (context) => ['Rojo', 'Amarillo', 'Verde']
+              .map(
+                (level) => Row(
+                  children: [
+                    Icon(
+                      Icons.circle,
+                      size: 11,
+                      color: _urgencyColor(context, level),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      level,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               )
               .toList(),
           onChanged: (value) => setState(() => draft.selectedUrgency = value),
           decoration: InputDecoration(
             filled: true,
-            fillColor: selectedColor?.withValues(alpha: 0.88) ??
-                theme.colorScheme.surfaceContainerHighest.withValues(
-                  alpha: theme.brightness == Brightness.dark ? 0.48 : 0.55,
-                ),
+            fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: theme.brightness == Brightness.dark ? 0.48 : 0.55,
+            ),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(11),
               borderSide: BorderSide(
-                color: selectedColor ?? theme.colorScheme.outlineVariant,
+                color: theme.colorScheme.outlineVariant,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(11),
               borderSide: BorderSide(
-                color: selectedColor ?? theme.colorScheme.outlineVariant,
+                color: theme.colorScheme.outlineVariant,
               ),
             ),
           ),
           dropdownColor: theme.colorScheme.surface,
-          iconEnabledColor: selectedColor == null ? null : Colors.white,
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: selectedColor == null ? null : Colors.white,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],

@@ -11,7 +11,8 @@ import 'controllers.dart';
 import 'database.dart';
 import 'hover_menu_item.dart';
 import 'models.dart';
-import 'pedido_materiales.dart' show PedidoMaterialesWidget;
+import 'pedido_materiales.dart'
+    show PedidoMaterialesWidget, PedidoMaterialesWidgetState;
 import 'theme.dart';
 
 void toast(BuildContext context, String message, {bool isError = false}) {
@@ -1202,6 +1203,9 @@ class MaterialOrderScreen extends StatefulWidget {
 }
 
 class _MaterialOrderScreenState extends State<MaterialOrderScreen> {
+  final GlobalKey<PedidoMaterialesWidgetState> _pedidoKey =
+      GlobalKey<PedidoMaterialesWidgetState>();
+
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
         animation: widget.inventoryVm,
@@ -1241,7 +1245,8 @@ class _MaterialOrderScreenState extends State<MaterialOrderScreen> {
                   ),
                 ],
                 const SizedBox(height: 16),
-                const PedidoMaterialesWidget(
+                PedidoMaterialesWidget(
+                  key: _pedidoKey,
                   embedded: true,
                 ),
                 const SizedBox(height: 16),
@@ -1314,7 +1319,31 @@ class _MaterialOrderScreenState extends State<MaterialOrderScreen> {
                                   DataCell(_orderStatusBadge(
                                       item.isDepleted ? 'AGOTADO' : 'PEDIR',
                                       statusColor)),
-                                  const DataCell(SizedBox.shrink()),
+                                  DataCell(
+                                    FilledButton.tonalIcon(
+                                      onPressed: () {
+                                        _pedidoKey.currentState?.prefillOrder(
+                                          material: item.material,
+                                          color: item.color,
+                                          spoolGrams: item.stockInicial > 0
+                                              ? item.stockInicial
+                                              : 1000,
+                                        );
+                                      },
+                                      icon: const Icon(
+                                          Icons.add_shopping_cart_rounded,
+                                          size: 14),
+                                      label: const Text('Pedir',
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700)),
+                                      style: FilledButton.styleFrom(
+                                        visualDensity: VisualDensity.compact,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 0),
+                                      ),
+                                    ),
+                                  ),
                                 ]);
                               }),
                             ],
@@ -1476,96 +1505,43 @@ class _HistoryState extends State<PrintHistoryScreen> {
               leadingIcon: Icons.arrow_back,
               onHoverEnter: widget.onHoverMenu,
               hideLeading: widget.isPinned,
-              actions: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: ElevatedButton.icon(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            PrintFormScreen(vm: vm, inventoryVm: inventoryVm),
-                      ),
-                    ),
-                    icon: const Icon(Icons.add, size: 16, color: Colors.white),
-                    label: const Text('Nueva impresión',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700)),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 0),
-                      backgroundColor: const Color(0xFF0066CC),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(color: borderSubtle),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-              ],
             ),
             backgroundColor: bgBase,
             body: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: double.infinity),
-                child: ListView(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  children: [
-                    // 2. Barra de búsqueda y chips de filtro
-                    _searchAndFilterRow(),
-                    const SizedBox(height: 16),
+                constraints: const BoxConstraints(maxWidth: 1360),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 780;
+                    return ListView(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 16),
+                      children: [
+                        _searchAndFilterRow(),
+                        const SizedBox(height: 16),
 
-                    if (vm.error != null) ...[
-                      _databaseError(vm.error!),
-                      const SizedBox(height: 14),
-                    ],
+                        if (vm.error != null) ...[
+                          _databaseError(vm.error!),
+                          const SizedBox(height: 14),
+                        ],
 
-                    // 3. Encabezados de Tabla: PIEZA | CANT. | FILAMENTO
-                    _tableHeader(),
-                    const SizedBox(height: 8),
+                        _tableHeader(isNarrow),
+                        const SizedBox(height: 8),
 
-                    // 4. Lista de Registros
-                    if (filtered.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(48),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: surfaceCard,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: borderSubtle),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.layers_clear_outlined,
-                                size: 40, color: textMuted),
-                            const SizedBox(height: 12),
-                            Text(
-                              vm.allRecords.isEmpty
-                                  ? 'No hay impresiones registradas en el historial'
-                                  : 'No se encontraron registros que coincidan con la búsqueda o filtro',
-                              style: TextStyle(
-                                color: textSecondary,
-                                fontSize: 13,
-                              ),
-                              textAlign: TextAlign.center,
+                        if (filtered.isEmpty)
+                          _emptyState(_searchController.text.isNotEmpty ||
+                              _activeFilter != 'Todos')
+                        else
+                          ...filtered.map(
+                            (record) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: _recordRow(context, vm, record,
+                                  isNarrow: isNarrow),
                             ),
-                          ],
-                        ),
-                      )
-                    else
-                      ...filtered.map(
-                        (record) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: _recordRow(context, vm, record),
-                        ),
-                      ),
-                  ],
+                          ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -1596,43 +1572,92 @@ class _HistoryState extends State<PrintHistoryScreen> {
         ),
       );
 
+  Widget _emptyState(bool hasFilters) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: surfaceCard,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderSubtle),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: surfaceElevated,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.print_outlined, size: 32, color: textMuted),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              hasFilters
+                  ? 'No se encontraron registros que coincidan con la búsqueda o filtro'
+                  : 'No hay impresiones registradas en el historial',
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              hasFilters
+                  ? 'Prueba modificando los términos de búsqueda o seleccionando "Todos".'
+                  : 'Registra una nueva impresión para comenzar a llevar el registro.',
+              style: TextStyle(
+                color: textSecondary,
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+
   Widget _searchAndFilterRow() {
     return LayoutBuilder(builder: (context, constraints) {
-      final isNarrow = constraints.maxWidth < 620;
+      final isNarrow = constraints.maxWidth < 780;
 
-      final searchField = TextField(
-        controller: _searchController,
-        onChanged: (_) => setState(() {}),
-        style: TextStyle(color: textPrimary, fontSize: 13),
-        decoration: InputDecoration(
-          isDense: true,
-          hintText: 'Buscar pieza o color',
-          hintStyle: TextStyle(color: textMuted, fontSize: 13),
-          prefixIcon: Icon(Icons.search, size: 18, color: textMuted),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
-                  icon: Icon(Icons.close, size: 16, color: textMuted),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() {});
-                  },
-                )
-              : null,
-          filled: true,
-          fillColor: surfaceElevated,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: borderSubtle),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: borderSubtle),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: accentPetrol, width: 1.5),
+      final searchField = SizedBox(
+        height: 40,
+        child: TextField(
+          controller: _searchController,
+          onChanged: (_) => setState(() {}),
+          style: TextStyle(color: textPrimary, fontSize: 13),
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: 'Buscar por pieza, solicitante, material o impresora...',
+            hintStyle: TextStyle(color: textMuted, fontSize: 12.5),
+            prefixIcon: Icon(Icons.search, size: 18, color: textMuted),
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: Icon(Icons.close, size: 16, color: textMuted),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {});
+                    },
+                  )
+                : null,
+            filled: true,
+            fillColor: surfaceElevated,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: borderSubtle),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: borderSubtle),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: accentPetrol, width: 1.5),
+            ),
           ),
         ),
       );
@@ -1641,20 +1666,56 @@ class _HistoryState extends State<PrintHistoryScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _filterChip('Todos'),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           _filterChip('PLA'),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           _filterChip('PETG'),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           _filterChip('Este mes'),
         ],
+      );
+
+      final newPrintBtn = ElevatedButton.icon(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PrintFormScreen(vm: vm, inventoryVm: inventoryVm),
+          ),
+        ),
+        icon: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
+        label: const Text(
+          'Nueva impresión',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: accentPetrol,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          minimumSize: const Size(0, 40),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
       );
 
       if (isNarrow) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            searchField,
+            Row(
+              children: [
+                Expanded(child: searchField),
+                const SizedBox(width: 8),
+                newPrintBtn,
+              ],
+            ),
             const SizedBox(height: 10),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -1666,8 +1727,10 @@ class _HistoryState extends State<PrintHistoryScreen> {
         return Row(
           children: [
             Expanded(child: searchField),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             filterChips,
+            const SizedBox(width: 14),
+            newPrintBtn,
           ],
         );
       }
@@ -1681,13 +1744,15 @@ class _HistoryState extends State<PrintHistoryScreen> {
       borderRadius: BorderRadius.circular(8),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        height: 40,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isSelected ? surfaceElevated : bgBase,
+          color: isSelected ? surfaceElevated : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? textSecondary : borderSubtle,
-            width: isSelected ? 1.2 : 1.0,
+            color: isSelected ? accentPetrol : borderSubtle,
+            width: isSelected ? 1.4 : 1.0,
           ),
         ),
         child: Text(
@@ -1695,31 +1760,91 @@ class _HistoryState extends State<PrintHistoryScreen> {
           style: TextStyle(
             color: isSelected ? textPrimary : textSecondary,
             fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
       ),
     );
   }
 
-  Widget _tableHeader() {
+  Widget _tableHeader(bool isNarrow) {
+    if (isNarrow) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        child: Row(
+          children: [
+            const SizedBox(width: 20),
+            Text(
+              'PIEZA',
+              style: TextStyle(
+                color: textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.0,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              'FILAMENTO',
+              style: TextStyle(
+                color: textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.0,
+              ),
+            ),
+            const SizedBox(width: 36),
+          ],
+        ),
+      );
+    }
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          const SizedBox(width: 24),
-          Text(
-            'PIEZA',
-            style: TextStyle(
-              color: textMuted,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.0,
+          const SizedBox(width: 25),
+          Expanded(
+            flex: 4,
+            child: Text(
+              'PIEZA',
+              style: TextStyle(
+                color: textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.0,
+              ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 14),
+          Expanded(
+            flex: 3,
+            child: Text(
+              'SOLICITANTE',
+              style: TextStyle(
+                color: textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            flex: 3,
+            child: Text(
+              'DETALLES TÉCNICOS',
+              style: TextStyle(
+                color: textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
           SizedBox(
-            width: 100,
+            width: 85,
             child: Text(
               'FILAMENTO',
               textAlign: TextAlign.right,
@@ -1731,18 +1856,20 @@ class _HistoryState extends State<PrintHistoryScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 40),
+          const SizedBox(width: 44),
         ],
       ),
     );
   }
 
-  Widget _recordRow(BuildContext context, PrintViewModel vm, PrintRecord r) {
+  Widget _recordRow(BuildContext context, PrintViewModel vm, PrintRecord r,
+      {bool isNarrow = false}) {
     return _PrintRecordRow(
       record: r,
       vm: vm,
       inventoryVm: inventoryVm,
       onDelete: (rec) => _confirmDeleteRecord(context, vm, inventoryVm, rec),
+      isNarrow: isNarrow,
     );
   }
 
@@ -1887,12 +2014,14 @@ class _PrintRecordRow extends StatefulWidget {
   final PrintViewModel vm;
   final InventoryViewModel inventoryVm;
   final void Function(PrintRecord record) onDelete;
+  final bool isNarrow;
 
   const _PrintRecordRow({
     required this.record,
     required this.vm,
     required this.inventoryVm,
     required this.onDelete,
+    this.isNarrow = false,
   });
 
   @override
@@ -1901,15 +2030,10 @@ class _PrintRecordRow extends StatefulWidget {
 
 class _PrintRecordRowState extends State<_PrintRecordRow> {
   bool _isHovered = false;
-  bool _isFocused = false;
 
   @override
   Widget build(BuildContext context) {
     final r = widget.record;
-    final isTouchDevice = !kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.android ||
-            defaultTargetPlatform == TargetPlatform.iOS);
-    final showActions = _isHovered || _isFocused || isTouchDevice;
 
     // Obtener lista única de materiales y colores
     final List<_MaterialColorEntry> distinctMaterials = [];
@@ -1958,337 +2082,475 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
         ? '${r.unitGrams.toInt()} g c/u'
         : '${r.unitGrams.toStringAsFixed(1)} g c/u';
 
+    final optionsMenu = SizedBox(
+      width: 32,
+      height: 32,
+      child: PopupMenuButton<String>(
+        tooltip: 'Opciones',
+        color: surfaceCard,
+        elevation: 6,
+        padding: EdgeInsets.zero,
+        icon: Icon(
+          Icons.more_vert,
+          size: 18,
+          color: _isHovered ? textPrimary : textSecondary,
+        ),
+        constraints: const BoxConstraints(minWidth: 130),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(color: borderSubtle),
+        ),
+        onSelected: (val) {
+          if (val == 'edit') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PrintFormScreen(
+                  vm: widget.vm,
+                  inventoryVm: widget.inventoryVm,
+                  record: r,
+                ),
+              ),
+            );
+          } else if (val == 'delete') {
+            widget.onDelete(r);
+          }
+        },
+        itemBuilder: (ctx) => [
+          PopupMenuItem(
+            value: 'edit',
+            height: 36,
+            child: Row(
+              children: [
+                Icon(Icons.edit_outlined, size: 16, color: textPrimary),
+                const SizedBox(width: 8),
+                Text('Editar',
+                    style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+          const PopupMenuDivider(height: 1),
+          const PopupMenuItem(
+            value: 'delete',
+            height: 36,
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline, size: 16, color: semanticDanger),
+                const SizedBox(width: 8),
+                Text('Eliminar',
+                    style: TextStyle(
+                        color: semanticDanger,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: Focus(
-        onFocusChange: (focused) => setState(() => _isFocused = focused),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: _isHovered
-                ? surfaceElevated.withValues(alpha: 0.7)
-                : surfaceCard,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: _isHovered ? borderStrong : borderSubtle,
-            ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: _isHovered
+              ? surfaceElevated.withValues(alpha: 0.7)
+              : surfaceCard,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: _isHovered ? borderStrong : borderSubtle,
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+        ),
+        child: widget.isNarrow
+            ? _buildNarrowLayout(
+                r,
+                primaryColor,
+                mainTitle,
+                subtitleFileName,
+                isMultiQty,
+                dateStr,
+                distinctMaterials,
+                totalGramsStr,
+                unitGramsStr,
+                optionsMenu,
+              )
+            : _buildWideLayout(
+                r,
+                primaryColor,
+                mainTitle,
+                subtitleFileName,
+                isMultiQty,
+                dateStr,
+                distinctMaterials,
+                totalGramsStr,
+                unitGramsStr,
+                optionsMenu,
+              ),
+      ),
+    );
+  }
+
+  Widget _buildWideLayout(
+    PrintRecord r,
+    VoxelColor primaryColor,
+    String mainTitle,
+    String? subtitleFileName,
+    bool isMultiQty,
+    String dateStr,
+    List<_MaterialColorEntry> distinctMaterials,
+    String totalGramsStr,
+    String unitGramsStr,
+    Widget optionsMenu,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // 1. Punto de color simple y elegante
+        colorSwatchCircle(
+          primaryColor.color,
+          size: 11,
+          isTransparent: primaryColor.isTransparent,
+        ),
+        const SizedBox(width: 14),
+
+        // 2. Columna: PIEZA Y PROYECTO
+        Expanded(
+          flex: 4,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // 1. Punto de color simple (lado izquierdo)
-              colorSwatchCircle(
-                primaryColor.color,
-                size: 12,
-                isTransparent: primaryColor.isTransparent,
-              ),
-              const SizedBox(width: 12),
-
-              // 2. Columna de Pieza: Nombre integrado con cantidad + Materiales (texto o swatches)
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Fila superior: Nombre del proyecto en grande (o archivo como respaldo)
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text.rich(
-                            TextSpan(
-                              text: mainTitle,
-                              style: TextStyle(
-                                color: textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              children: [
-                                if (isMultiQty)
-                                  TextSpan(
-                                    text: ' · × ${r.cantidad} uds',
-                                    style: TextStyle(
-                                      color: textPrimary.withValues(alpha: 0.8),
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (showActions &&
-                            r.figureCategory.trim().isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: surfaceElevated,
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: borderSubtle),
-                            ),
-                            child: Text(
-                              r.figureCategory,
-                              style: TextStyle(
-                                color: textSecondary,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    // Archivo 3D (cuando el título principal es el nombre del proyecto)
-                    if (subtitleFileName != null && subtitleFileName.trim().isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Icon(Icons.insert_drive_file_outlined,
-                              size: 12, color: accentPetrol),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              'Archivo: $subtitleFileName',
-                              style: TextStyle(
-                                color: textSecondary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    // Solicitante (si está disponible)
-                    if ((r.requesterName ?? '').trim().isNotEmpty) ...[
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Icon(
-                            r.requesterType == 'Docente'
-                                ? Icons.badge_outlined
-                                : (r.requesterType == 'Otro'
-                                    ? Icons.person_outline
-                                    : Icons.school_outlined),
-                            size: 12,
-                            color: accentPetrol,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              '${r.requesterName} · ${r.requesterType ?? 'Solicitante'}${r.requesterId != null && r.requesterId!.isNotEmpty ? ' (${r.requesterId})' : ''}',
-                              style: TextStyle(
-                                color: textSecondary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    if (showActions) ...[
-                      const SizedBox(height: 4),
-                      // Fila inferior: Fecha y material(es)
-                      _buildMaterialSubtitle(dateStr, distinctMaterials),
-                      if ((r.printerName ?? '').trim().isNotEmpty ||
-                          (r.printTime ?? '').trim().isNotEmpty) ...[
-                        const SizedBox(height: 3),
-                        Row(
-                          children: [
-                            if ((r.printerName ?? '').trim().isNotEmpty)
-                              Flexible(
-                                child: Text(
-                                  'Impresora: ${r.printerName}',
-                                  style: TextStyle(
-                                    color: textSecondary,
-                                    fontSize: 10,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            if ((r.printTime ?? '').trim().isNotEmpty) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: surfaceElevated,
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: borderSubtle),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.schedule,
-                                        size: 10, color: accentPetrol),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      r.printTime!,
-                                      style: TextStyle(
-                                        color: textPrimary,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // 3. Filamento: Gramos totales y unitarios
-              SizedBox(
-                width: 100,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      totalGramsStr,
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      mainTitle,
                       style: TextStyle(
                         color: textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
                       ),
-                    ),
-                    if (showActions && isMultiQty) ...[
-                      const SizedBox(height: 1),
-                      Text(
-                        unitGramsStr,
-                        style: TextStyle(
-                          color: textMuted,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-
-              // 4. Acciones: Menú de tres puntos con transición suave de opacidad (180ms)
-              SizedBox(
-                width: 32,
-                height: 32,
-                child: AnimatedOpacity(
-                  opacity: showActions ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeInOut,
-                  child: IgnorePointer(
-                    ignoring: !showActions,
-                    child: PopupMenuButton<String>(
-                      tooltip: 'Opciones',
-                      color: surfaceCard,
-                      elevation: 6,
-                      padding: EdgeInsets.zero,
-                      icon:
-                          Icon(Icons.more_vert, size: 18, color: textSecondary),
-                      constraints: const BoxConstraints(minWidth: 130),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(color: borderSubtle),
-                      ),
-                      onSelected: (val) {
-                        if (val == 'edit') {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => PrintFormScreen(
-                                vm: widget.vm,
-                                inventoryVm: widget.inventoryVm,
-                                record: r,
-                              ),
-                            ),
-                          );
-                        } else if (val == 'delete') {
-                          widget.onDelete(r);
-                        }
-                      },
-                      itemBuilder: (ctx) => [
-                        PopupMenuItem(
-                          value: 'edit',
-                          height: 36,
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit_outlined,
-                                  size: 16, color: textPrimary),
-                              const SizedBox(width: 8),
-                              Text('Editar',
-                                  style: TextStyle(
-                                      color: textPrimary,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500)),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuDivider(height: 1),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          height: 36,
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete_outline,
-                                  size: 16, color: semanticDanger),
-                              SizedBox(width: 8),
-                              Text('Eliminar',
-                                  style: TextStyle(
-                                      color: semanticDanger,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600)),
-                            ],
-                          ),
-                        ),
-                      ],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (isMultiQty) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: surfaceElevated,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: borderSubtle),
+                      ),
+                      child: Text(
+                        '× ${r.cantidad}',
+                        style: TextStyle(
+                          color: textSecondary,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 3),
+              Row(
+                children: [
+                  if (subtitleFileName != null &&
+                      subtitleFileName.trim().isNotEmpty)
+                    Flexible(
+                      child: Text(
+                        subtitleFileName,
+                        style: TextStyle(
+                          color: textSecondary,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  if (r.figureCategory.trim().isNotEmpty) ...[
+                    if (subtitleFileName != null &&
+                        subtitleFileName.trim().isNotEmpty)
+                      Text(
+                        ' · ',
+                        style: TextStyle(color: textMuted, fontSize: 11),
+                      ),
+                    Text(
+                      r.figureCategory,
+                      style: TextStyle(
+                        color: textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                  if ((subtitleFileName == null || subtitleFileName.isEmpty) &&
+                      r.figureCategory.trim().isEmpty)
+                    Text(
+                      'Pieza 3D',
+                      style: TextStyle(
+                        color: textMuted.withValues(alpha: 0.6),
+                        fontSize: 11,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 14),
+
+        // 3. Columna: SOLICITANTE
+        Expanded(
+          flex: 3,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if ((r.requesterName ?? '').trim().isNotEmpty) ...[
+                Text(
+                  r.requesterName!.trim(),
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '${r.requesterType ?? 'Solicitante'}${r.requesterId != null && r.requesterId!.isNotEmpty ? ' (${r.requesterId})' : ''}',
+                  style: TextStyle(
+                    color: textMuted,
+                    fontSize: 11,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ] else ...[
+                Text(
+                  '—',
+                  style: TextStyle(
+                    color: textMuted,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(width: 14),
+
+        // 4. Columna: DETALLES TÉCNICOS (Material, Impresora, Fecha, Tiempo)
+        Expanded(
+          flex: 3,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildMaterialSubtitle(distinctMaterials),
+              const SizedBox(height: 3),
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      '$dateStr · ${(r.printerName ?? '').trim().isNotEmpty ? r.printerName! : 'Estándar'}',
+                      style: TextStyle(
+                        color: textMuted,
+                        fontSize: 11,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if ((r.printTime ?? '').trim().isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      '⏱ ${r.printTime}',
+                      style: TextStyle(
+                        color: textSecondary,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 14),
+
+        // 5. Columna: FILAMENTO
+        SizedBox(
+          width: 85,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                totalGramsStr,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                isMultiQty ? unitGramsStr : 'total',
+                style: TextStyle(
+                  color: textMuted,
+                  fontSize: 10,
                 ),
               ),
             ],
           ),
         ),
-      ),
+        const SizedBox(width: 8),
+
+        // 6. Columna: OPCIONES
+        optionsMenu,
+      ],
     );
   }
 
-  Widget _buildMaterialSubtitle(
-      String dateStr, List<_MaterialColorEntry> materials) {
+  Widget _buildNarrowLayout(
+    PrintRecord r,
+    VoxelColor primaryColor,
+    String mainTitle,
+    String? subtitleFileName,
+    bool isMultiQty,
+    String dateStr,
+    List<_MaterialColorEntry> distinctMaterials,
+    String totalGramsStr,
+    String unitGramsStr,
+    Widget optionsMenu,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            colorSwatchCircle(
+              primaryColor.color,
+              size: 10,
+              isTransparent: primaryColor.isTransparent,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                mainTitle,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (isMultiQty) ...[
+              const SizedBox(width: 6),
+              Text(
+                '× ${r.cantidad}',
+                style: TextStyle(
+                  color: textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            const SizedBox(width: 8),
+            Text(
+              totalGramsStr,
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 4),
+            optionsMenu,
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            const SizedBox(width: 20),
+            Expanded(
+              child: _buildMaterialSubtitle(distinctMaterials),
+            ),
+            if ((r.requesterName ?? '').trim().isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Text(
+                r.requesterName!.trim(),
+                style: TextStyle(
+                  color: textMuted,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            const SizedBox(width: 20),
+            Text(
+              '$dateStr · ${(r.printerName ?? '').trim().isNotEmpty ? r.printerName! : 'Estándar'}',
+              style: TextStyle(
+                color: textMuted,
+                fontSize: 10.5,
+              ),
+            ),
+            if ((r.printTime ?? '').trim().isNotEmpty) ...[
+              const SizedBox(width: 6),
+              Text(
+                '· ⏱ ${r.printTime}',
+                style: TextStyle(
+                  color: textMuted,
+                  fontSize: 10.5,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMaterialSubtitle(List<_MaterialColorEntry> materials) {
     if (materials.length <= 1) {
-      // 1 solo material/color: texto normal
       return Text(
-        '$dateStr · ${materials.first.fullName}',
+        materials.first.fullName,
         style: TextStyle(
-          color: textSecondary,
-          fontSize: 11,
-          fontWeight: FontWeight.w400,
+          color: textPrimary,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
         ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       );
     }
 
-    // 2 o más materiales/colores: fila compacta de swatches
+    // Múltiples materiales: swatches circulares compactos con tooltip
     final List<Widget> swatches = [];
-    final bool hasOverflow = materials.length > 6;
-    final int displayCount = hasOverflow ? 5 : materials.length;
+    final bool hasOverflow = materials.length > 5;
+    final int displayCount = hasOverflow ? 4 : materials.length;
 
     for (int i = 0; i < displayCount; i++) {
       final m = materials[i];
@@ -2297,10 +2559,10 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
           padding: const EdgeInsets.only(right: 4),
           child: Tooltip(
             message: m.fullName,
-            waitDuration: const Duration(milliseconds: 250),
+            waitDuration: const Duration(milliseconds: 200),
             child: colorSwatchCircle(
               m.voxelColor.color,
-              size: 10,
+              size: 9,
               isTransparent: m.voxelColor.isTransparent,
             ),
           ),
@@ -2309,13 +2571,13 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
     }
 
     if (hasOverflow) {
-      final remainingCount = materials.length - 5;
+      final remainingCount = materials.length - 4;
       final remainingNames =
-          materials.skip(5).map((m) => m.fullName).join('\n');
+          materials.skip(4).map((m) => m.fullName).join('\n');
       swatches.add(
         Tooltip(
           message: remainingNames,
-          waitDuration: const Duration(milliseconds: 250),
+          waitDuration: const Duration(milliseconds: 200),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
             decoration: BoxDecoration(
@@ -2339,15 +2601,20 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          '$dateStr · ',
-          style: TextStyle(
-            color: textSecondary,
-            fontSize: 11,
-            fontWeight: FontWeight.w400,
+        ...swatches,
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            '${materials.length} materiales',
+            style: TextStyle(
+              color: textSecondary,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        ...swatches,
       ],
     );
   }
