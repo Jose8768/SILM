@@ -9,6 +9,9 @@ import 'package:voxelcost3d/models.dart';
 import 'package:voxelcost3d/screens.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences.setMockInitialValues({});
+
   testWidgets('Verifica el conmutador y el modo oscuro global',
       (WidgetTester tester) async {
     await tester.pumpWidget(const VoxelcostApp());
@@ -87,6 +90,7 @@ void main() {
     expect(find.text('ANÁLISIS DE PRODUCCIÓN'), findsOneWidget);
     expect(find.text('MATERIAL CONSUMIDO'), findsOneWidget);
     expect(find.text('PIEZAS FABRICADAS'), findsOneWidget);
+    expect(find.text('VALOR EN MATERIAL'), findsNothing);
     expect(find.text('CATEGORÍAS DE USO'), findsOneWidget);
     expect(find.text('IMPRESIONES CON MAYOR CONSUMO'), findsOneWidget);
     expect(find.text('MATERIALES Y COLORES'), findsOneWidget);
@@ -94,7 +98,9 @@ void main() {
       tester
           .getSize(find.byKey(const ValueKey('analytics_evolution_card')))
           .width,
-      greaterThan(800),
+      tester
+          .getSize(find.byKey(const ValueKey('analytics_category_card')))
+          .width,
     );
     expect(
       tester
@@ -108,6 +114,22 @@ void main() {
           .height,
       tester
           .getSize(find.byKey(const ValueKey('analytics_evolution_card')))
+          .height,
+    );
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('analytics_top_pieces_card')))
+          .width,
+      tester
+          .getSize(find.byKey(const ValueKey('analytics_material_color_card')))
+          .width,
+    );
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('analytics_top_pieces_card')))
+          .height,
+      tester
+          .getSize(find.byKey(const ValueKey('analytics_material_color_card')))
           .height,
     );
     expect(
@@ -147,7 +169,8 @@ void main() {
     await tester.pumpAndSettle();
 
     final printerPanel = find.byKey(const ValueKey('printer_info_panel'));
-    expect(find.byKey(const ValueKey('printer_select_dropdown')), findsOneWidget);
+    expect(
+        find.byKey(const ValueKey('printer_select_dropdown')), findsOneWidget);
     expect(tester.getTopLeft(printerPanel).dx, lessThan(100));
     expect(
       tester.getTopLeft(find.text('DATOS DE LA IMPRESORA')).dy,
@@ -630,7 +653,9 @@ void main() {
     expect(cappedPrinterRecord.printerCount, 100);
   });
 
-  test('Verifica PrintRecord con datos de solicitante, número de control/empleado y tiempo de impresión', () {
+  test(
+      'Verifica PrintRecord con datos de solicitante, número de control/empleado y tiempo de impresión',
+      () {
     final record = PrintRecord(
       id: 5,
       date: DateTime.now().millisecondsSinceEpoch,
@@ -711,4 +736,3 @@ void main() {
     expect(copy.pieceType, 'brazo_robotico_v3.stl');
   });
 }
-

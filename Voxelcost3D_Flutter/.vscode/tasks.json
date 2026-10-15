@@ -42,7 +42,7 @@
 				"windows"
 			],
 			"options": {
-				"cwd": "C:\\VX3D"
+				"cwd": "V:\\${workspaceFolderBasename}"
 			},
 			"dependsOn": "Preparar proyecto Windows",
 			"dependsOrder": "sequence",

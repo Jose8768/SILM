@@ -65,8 +65,7 @@ class PrintViewModel extends ChangeNotifier {
               .where((m) => m.type.toUpperCase() == 'PETG')
               .fold(0.0, (s, m) => s + (m.grams * r.cantidad)));
 
-  PrintRecord? get latestRecord =>
-      allRecords.isEmpty ? null : allRecords.first;
+  PrintRecord? get latestRecord => allRecords.isEmpty ? null : allRecords.first;
 
   /// Retorna un rango continuo de meses (rellena con 0 los meses intermedios como JUN, JUL, AGO)
   List<MonthlyStats> get monthlyAnalytics {
@@ -180,7 +179,10 @@ class PrintViewModel extends ChangeNotifier {
   }
 
   Future<void> deleteRecord(PrintRecord record) async {
-    await db.deleteRecord(record);
+    final deleted = await db.deleteRecord(record);
+    if (deleted != 1) {
+      throw StateError('El registro de impresión ya no existe.');
+    }
     await refresh();
   }
 }
@@ -249,11 +251,13 @@ class InventoryViewModel extends ChangeNotifier {
   }
 
   int get lowStockCount => inventoryItems
-      .where((i) => i.stockInicial > 0 && (i.stockActual / i.stockInicial) <= 0.2)
+      .where(
+          (i) => i.stockInicial > 0 && (i.stockActual / i.stockInicial) <= 0.2)
       .length;
 
   List<InventoryItem> get lowStockItems => inventoryItems
-      .where((i) => i.stockInicial > 0 && (i.stockActual / i.stockInicial) <= 0.2)
+      .where(
+          (i) => i.stockInicial > 0 && (i.stockActual / i.stockInicial) <= 0.2)
       .toList();
 
   InventoryItem? findMatchingItem(
@@ -263,7 +267,8 @@ class InventoryViewModel extends ChangeNotifier {
     int? colorValue,
   }) {
     final matClean = material.trim().toLowerCase();
-    final targetColor = findVoxelColor(value: colorValue, name: colorName, hex: colorHex);
+    final targetColor =
+        findVoxelColor(value: colorValue, name: colorName, hex: colorHex);
 
     for (final item in inventoryItems) {
       if (item.material.trim().toLowerCase() == matClean) {
@@ -312,7 +317,8 @@ class InventoryViewModel extends ChangeNotifier {
     await db.updateItem(item);
     await refresh();
 
-    final isLow = item.stockInicial > 0 && (item.stockActual / item.stockInicial) <= 0.2;
+    final isLow =
+        item.stockInicial > 0 && (item.stockActual / item.stockInicial) <= 0.2;
     return isLow;
   }
 
@@ -332,9 +338,47 @@ class InventoryViewModel extends ChangeNotifier {
     );
     if (item == null) return;
 
-    item.stockActual = (item.stockActual + grams).clamp(0.0, item.stockInicial * 2);
+    item.stockActual =
+        (item.stockActual + grams).clamp(0.0, item.stockInicial * 2);
     await db.updateItem(item);
     await refresh();
+  }
+
+  Future<double> deletePrintRecord(
+    PrintRecord record, {
+    required bool returnToStock,
+  }) async {
+    final updatedItems = <String, InventoryItem>{};
+    var restoredGrams = 0.0;
+
+    if (returnToStock) {
+      for (final material in record.materials) {
+        final item = findMatchingItem(
+          material.type,
+          colorName: material.colorName,
+          colorValue: material.color,
+        );
+        if (item == null) continue;
+
+        final current = updatedItems[item.id] ?? item;
+        final newStock =
+            (current.stockActual + material.grams * record.cantidad)
+                .clamp(0.0, current.stockInicial * 2)
+                .toDouble();
+        restoredGrams += newStock - current.stockActual;
+        updatedItems[item.id] = current.copyWith(stockActual: newStock);
+      }
+    }
+
+    final deleted = await db.deleteRecord(
+      record,
+      inventoryUpdates: updatedItems.values.toList(),
+    );
+    if (deleted != 1) {
+      throw StateError('El registro de impresión ya no existe.');
+    }
+    await refresh();
+    return restoredGrams;
   }
 
   static const List<String> defaultBrands = [
@@ -428,4 +472,3 @@ class InventoryViewModel extends ChangeNotifier {
     await refresh();
   }
 }
-

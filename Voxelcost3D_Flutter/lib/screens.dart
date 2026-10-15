@@ -9,7 +9,6 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart' as share_plus;
 import 'controllers.dart';
 import 'database.dart';
-import 'hover_menu_item.dart';
 import 'models.dart';
 import 'pedido_materiales.dart'
     show PedidoMaterialesWidget, PedidoMaterialesWidgetState;
@@ -701,31 +700,31 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                HoverMenuItem(
+                _buildSidebarItem(
                   title: 'Registro de Impresiones',
                   icon: Icons.view_in_ar_rounded,
                   selected: _activePanel == ActivePanel.printHistory,
                   onTap: () => _selectPanel(ActivePanel.printHistory),
                 ),
-                HoverMenuItem(
+                _buildSidebarItem(
                   title: 'Inventario de Materiales',
                   icon: Icons.inventory_2_rounded,
                   selected: _activePanel == ActivePanel.inventory,
                   onTap: () => _selectPanel(ActivePanel.inventory),
                 ),
-                HoverMenuItem(
+                _buildSidebarItem(
                   title: 'Análisis de Producción',
                   icon: Icons.bar_chart_rounded,
                   selected: _activePanel == ActivePanel.analytics,
                   onTap: () => _selectPanel(ActivePanel.analytics),
                 ),
-                HoverMenuItem(
+                _buildSidebarItem(
                   title: 'Pedido de Material',
                   icon: Icons.shopping_cart_outlined,
                   selected: _activePanel == ActivePanel.materialOrder,
                   onTap: () => _selectPanel(ActivePanel.materialOrder),
                 ),
-                HoverMenuItem(
+                _buildSidebarItem(
                   title: 'Exportar',
                   icon: Icons.download_rounded,
                   selected: _activePanel == ActivePanel.export,
@@ -785,6 +784,45 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarItem({
+    required String title,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    return Material(
+      color: surfaceCard,
+      child: ListTile(
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        hoverColor: Colors.transparent,
+        selected: selected,
+        selectedTileColor: primaryColor.withValues(alpha: 0.14),
+        selectedColor: primaryColor,
+        leading: Icon(icon, size: 20),
+        title: Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: selected ? primaryColor : textPrimary,
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            letterSpacing: 0.2,
+          ),
+        ),
+        trailing: Icon(
+          Icons.chevron_right_rounded,
+          size: 16,
+          color: selected ? primaryColor : textSecondary,
+        ),
+        onTap: onTap,
       ),
     );
   }
@@ -1211,9 +1249,6 @@ class _MaterialOrderScreenState extends State<MaterialOrderScreen> {
         animation: widget.inventoryVm,
         builder: (context, _) {
           final lowStockItems = widget.inventoryVm.lowStockItems;
-          final depletedCount =
-              lowStockItems.where((item) => item.isDepleted).length;
-          final itemsToOrder = lowStockItems.length;
 
           return Scaffold(
             backgroundColor: bgBase,
@@ -1266,88 +1301,112 @@ class _MaterialOrderScreenState extends State<MaterialOrderScreen> {
                             ),
                           ),
                         )
-                      : SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: DataTable(
-                            columns: const [
-                              DataColumn(label: Text('MATERIAL')),
-                              DataColumn(label: Text('COLOR / DETALLE')),
-                              DataColumn(label: Text('STOCK')),
-                              DataColumn(label: Text('DISPONIBLE')),
-                              DataColumn(label: Text('ESTADO')),
-                              DataColumn(label: Text('')),
-                            ],
-                            rows: [
-                              ...lowStockItems.map((item) {
-                                final ratio = item.remainingRatio;
-                                final statusColor = item.isDepleted
-                                    ? semanticDanger
-                                    : semanticWarning;
-                                return DataRow(cells: [
-                                  DataCell(Text(item.material,
-                                      style: TextStyle(
-                                          color: textPrimary,
-                                          fontWeight: FontWeight.w600))),
-                                  DataCell(Text('${item.color} · ${item.brand}',
-                                      style: TextStyle(color: textSecondary))),
-                                  DataCell(Text(
-                                      '${item.stockActual.toStringAsFixed(0)} / ${item.stockInicial.toStringAsFixed(0)} g',
-                                      style: TextStyle(color: textPrimary))),
-                                  DataCell(
-                                    SizedBox(
-                                      width: 120,
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: LinearProgressIndicator(
-                                              value: ratio,
-                                              minHeight: 6,
-                                              backgroundColor: borderSubtle,
-                                              color: statusColor,
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minWidth: constraints.maxWidth,
+                                ),
+                                child: DataTable(
+                                  columns: const [
+                                    DataColumn(label: Text('MATERIAL')),
+                                    DataColumn(label: Text('COLOR / DETALLE')),
+                                    DataColumn(label: Text('STOCK')),
+                                    DataColumn(label: Text('DISPONIBLE')),
+                                    DataColumn(label: Text('ESTADO')),
+                                    DataColumn(label: Text('')),
+                                  ],
+                                  rows: [
+                                    ...lowStockItems.map((item) {
+                                      final ratio = item.remainingRatio;
+                                      final statusColor = item.isDepleted
+                                          ? semanticDanger
+                                          : semanticWarning;
+                                      return DataRow(cells: [
+                                        DataCell(Text(item.material,
+                                            style: TextStyle(
+                                                color: textPrimary,
+                                                fontWeight: FontWeight.w600))),
+                                        DataCell(Text(
+                                            '${item.color} · ${item.brand}',
+                                            style: TextStyle(
+                                                color: textSecondary))),
+                                        DataCell(Text(
+                                            '${item.stockActual.toStringAsFixed(0)} / ${item.stockInicial.toStringAsFixed(0)} g',
+                                            style:
+                                                TextStyle(color: textPrimary))),
+                                        DataCell(
+                                          SizedBox(
+                                            width: 120,
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  child:
+                                                      LinearProgressIndicator(
+                                                    value: ratio,
+                                                    minHeight: 6,
+                                                    backgroundColor:
+                                                        borderSubtle,
+                                                    color: statusColor,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                    '${(ratio * 100).round()}%',
+                                                    style: TextStyle(
+                                                        color: statusColor,
+                                                        fontSize: 11,
+                                                        fontWeight:
+                                                            FontWeight.w700)),
+                                              ],
                                             ),
                                           ),
-                                          const SizedBox(width: 8),
-                                          Text('${(ratio * 100).round()}%',
-                                              style: TextStyle(
-                                                  color: statusColor,
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w700)),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  DataCell(_orderStatusBadge(
-                                      item.isDepleted ? 'AGOTADO' : 'PEDIR',
-                                      statusColor)),
-                                  DataCell(
-                                    FilledButton.tonalIcon(
-                                      onPressed: () {
-                                        _pedidoKey.currentState?.prefillOrder(
-                                          material: item.material,
-                                          color: item.color,
-                                          spoolGrams: item.stockInicial > 0
-                                              ? item.stockInicial
-                                              : 1000,
-                                        );
-                                      },
-                                      icon: const Icon(
-                                          Icons.add_shopping_cart_rounded,
-                                          size: 14),
-                                      label: const Text('Pedir',
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w700)),
-                                      style: FilledButton.styleFrom(
-                                        visualDensity: VisualDensity.compact,
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 10, vertical: 0),
-                                      ),
-                                    ),
-                                  ),
-                                ]);
-                              }),
-                            ],
-                          ),
+                                        ),
+                                        DataCell(_orderStatusBadge(
+                                            item.isDepleted
+                                                ? 'AGOTADO'
+                                                : 'PEDIR',
+                                            statusColor)),
+                                        DataCell(
+                                          FilledButton.tonalIcon(
+                                            onPressed: () {
+                                              _pedidoKey.currentState
+                                                  ?.prefillOrder(
+                                                material: item.material,
+                                                color: item.color,
+                                                spoolGrams:
+                                                    item.stockInicial > 0
+                                                        ? item.stockInicial
+                                                        : 1000,
+                                              );
+                                            },
+                                            icon: const Icon(
+                                                Icons.add_shopping_cart_rounded,
+                                                size: 14),
+                                            label: const Text('Pedir',
+                                                style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight:
+                                                        FontWeight.w700)),
+                                            style: FilledButton.styleFrom(
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 0),
+                                            ),
+                                          ),
+                                        ),
+                                      ]);
+                                    }),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
                 ),
               ],
@@ -1355,7 +1414,6 @@ class _MaterialOrderScreenState extends State<MaterialOrderScreen> {
           );
         },
       );
-
 
   Widget _orderStatusBadge(String label, Color color) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1507,43 +1565,35 @@ class _HistoryState extends State<PrintHistoryScreen> {
               hideLeading: widget.isPinned,
             ),
             backgroundColor: bgBase,
-            body: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1360),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isNarrow = constraints.maxWidth < 780;
-                    return ListView(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 16),
-                      children: [
-                        _searchAndFilterRow(),
-                        const SizedBox(height: 16),
-
-                        if (vm.error != null) ...[
-                          _databaseError(vm.error!),
-                          const SizedBox(height: 14),
-                        ],
-
-                        _tableHeader(isNarrow),
-                        const SizedBox(height: 8),
-
-                        if (filtered.isEmpty)
-                          _emptyState(_searchController.text.isNotEmpty ||
-                              _activeFilter != 'Todos')
-                        else
-                          ...filtered.map(
-                            (record) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: _recordRow(context, vm, record,
-                                  isNarrow: isNarrow),
-                            ),
-                          ),
-                      ],
-                    );
-                  },
-                ),
-              ),
+            body: LayoutBuilder(
+              builder: (context, constraints) {
+                final isNarrow = constraints.maxWidth < 780;
+                return ListView(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  children: [
+                    _searchAndFilterRow(),
+                    const SizedBox(height: 16),
+                    if (vm.error != null) ...[
+                      _databaseError(vm.error!),
+                      const SizedBox(height: 14),
+                    ],
+                    _tableHeader(isNarrow),
+                    const SizedBox(height: 8),
+                    if (filtered.isEmpty)
+                      _emptyState(_searchController.text.isNotEmpty ||
+                          _activeFilter != 'Todos')
+                    else
+                      ...filtered.map(
+                        (record) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _recordRow(context, vm, record,
+                              isNarrow: isNarrow),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
           );
         },
@@ -1958,24 +2008,31 @@ class _HistoryState extends State<PrintHistoryScreen> {
             ElevatedButton(
               onPressed: () async {
                 Navigator.of(dialogCtx).pop();
-                if (returnToStock) {
-                  for (final m in r.materials) {
-                    inventoryVm.restoreGrams(
-                      m.type,
-                      m.grams * r.cantidad,
-                      colorName: m.colorName,
-                      colorValue: m.color,
+                try {
+                  final restoredGrams = await inventoryVm.deletePrintRecord(
+                    r,
+                    returnToStock: returnToStock,
+                  );
+                  await vm.refresh();
+                  if (context.mounted) {
+                    final message = !returnToStock
+                        ? 'Registro eliminado'
+                        : restoredGrams == 0
+                            ? 'Registro eliminado; no había bobinas coincidentes para devolver el filamento'
+                            : 'Registro eliminado y ${restoredGrams.toStringAsFixed(1)} g devueltos al inventario';
+                    toast(context, message);
+                  }
+                } catch (error, stackTrace) {
+                  debugPrint(
+                      'Error al eliminar el registro de impresión: $error');
+                  debugPrintStack(stackTrace: stackTrace);
+                  if (context.mounted) {
+                    toast(
+                      context,
+                      'No se pudo completar la eliminación: $error',
+                      isError: true,
                     );
                   }
-                }
-                await vm.deleteRecord(r);
-                if (context.mounted) {
-                  toast(
-                    context,
-                    returnToStock
-                        ? 'Registro eliminado y ${r.totalGrams.toStringAsFixed(1)} g devueltos al inventario'
-                        : 'Registro eliminado',
-                  );
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -2139,7 +2196,7 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
             child: Row(
               children: [
                 Icon(Icons.delete_outline, size: 16, color: semanticDanger),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text('Eliminar',
                     style: TextStyle(
                         color: semanticDanger,
@@ -2159,9 +2216,8 @@ class _PrintRecordRowState extends State<_PrintRecordRow> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: _isHovered
-              ? surfaceElevated.withValues(alpha: 0.7)
-              : surfaceCard,
+          color:
+              _isHovered ? surfaceElevated.withValues(alpha: 0.7) : surfaceCard,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: _isHovered ? borderStrong : borderSubtle,
@@ -2909,7 +2965,9 @@ class _FormState extends State<PrintFormScreen> {
     qtyController = TextEditingController(text: '$cantidad');
 
     final savedReqType = r?.requesterType;
-    if (savedReqType == 'Docente' || savedReqType == 'Otro' || savedReqType == 'Estudiante') {
+    if (savedReqType == 'Docente' ||
+        savedReqType == 'Otro' ||
+        savedReqType == 'Estudiante') {
       requesterType = savedReqType!;
     } else if (savedReqType != null && savedReqType.isNotEmpty) {
       requesterType = 'Otro';
@@ -2937,8 +2995,7 @@ class _FormState extends State<PrintFormScreen> {
       if (hMatch != null) initH = int.tryParse(hMatch.group(1) ?? '0') ?? 0;
       if (mMatch != null) initM = int.tryParse(mMatch.group(1) ?? '0') ?? 0;
       if (hMatch == null && mMatch == null) {
-        initM =
-            int.tryParse(r.printTime!.replaceAll(RegExp(r'\D'), '')) ?? 0;
+        initM = int.tryParse(r.printTime!.replaceAll(RegExp(r'\D'), '')) ?? 0;
       }
     }
     printHoursController =
@@ -3048,9 +3105,8 @@ class _FormState extends State<PrintFormScreen> {
                 final fieldWidth = isWide
                     ? (constraints.maxWidth - 16) / 2
                     : constraints.maxWidth;
-                final nameFieldWidth = isWide
-                    ? (fieldWidth * 0.5)
-                    : constraints.maxWidth;
+                final nameFieldWidth =
+                    isWide ? (fieldWidth * 0.5) : constraints.maxWidth;
                 final idFieldWidth = isWide
                     ? (fieldWidth * 0.25).clamp(120.0, fieldWidth)
                     : constraints.maxWidth;
@@ -3319,7 +3375,7 @@ class _FormState extends State<PrintFormScreen> {
                                     ? const ValueKey('printer_select_dropdown')
                                     : ValueKey(
                                         'printer_select_dropdown_$entryIndex'),
-                                value: entry.selectedKey,
+                                initialValue: entry.selectedKey,
                                 isExpanded: true,
                                 dropdownColor: surfaceElevated,
                                 style:
@@ -3329,8 +3385,8 @@ class _FormState extends State<PrintFormScreen> {
                                   printerEntries.length > 1
                                       ? 'Selecciona otra impresora *'
                                       : 'Selecciona una impresora *',
-                                  style: TextStyle(
-                                      color: textMuted, fontSize: 13),
+                                  style:
+                                      TextStyle(color: textMuted, fontSize: 13),
                                 ),
                                 decoration: fieldDecoration(
                                   printerEntries.length > 1
@@ -3362,7 +3418,7 @@ class _FormState extends State<PrintFormScreen> {
                                 icon: Icon(
                                   Icons.delete_outline,
                                   size: 20,
-                                  color: semanticDanger.withOpacity(0.85),
+                                  color: semanticDanger.withValues(alpha: 0.85),
                                 ),
                                 onPressed: () {
                                   setState(() {
@@ -3462,7 +3518,8 @@ class _FormState extends State<PrintFormScreen> {
                               SizedBox(
                                 width: dropdownWidth,
                                 child: TextField(
-                                  key: ValueKey('printer_name_field_$entryIndex'),
+                                  key: ValueKey(
+                                      'printer_name_field_$entryIndex'),
                                   controller: entry.customNameController,
                                   textCapitalization: TextCapitalization.words,
                                   style: TextStyle(
@@ -3545,7 +3602,6 @@ class _FormState extends State<PrintFormScreen> {
         ),
       );
 
-
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
         animation: inventoryVm,
@@ -3588,7 +3644,8 @@ class _FormState extends State<PrintFormScreen> {
                                   TextStyle(color: textPrimary, fontSize: 13),
                               decoration: fieldDecoration(
                                 'Nombre del proyecto *',
-                                hint: 'Ej: Brazo robótico SILM / Tesis Manufactura 2026',
+                                hint:
+                                    'Ej: Brazo robótico SILM / Tesis Manufactura 2026',
                                 prefix: const Icon(Icons.folder_open_outlined,
                                     size: 18, color: accentPetrol),
                               ),
@@ -3609,9 +3666,12 @@ class _FormState extends State<PrintFormScreen> {
                                   TextStyle(color: textPrimary, fontSize: 13),
                               decoration: fieldDecoration(
                                 'Nombre del archivo *',
-                                hint: 'Ej: soporte_engrane_v2.stl / pinza_robotica.gcode',
-                                prefix: const Icon(Icons.insert_drive_file_outlined,
-                                    size: 18, color: accentPetrol),
+                                hint:
+                                    'Ej: soporte_engrane_v2.stl / pinza_robotica.gcode',
+                                prefix: const Icon(
+                                    Icons.insert_drive_file_outlined,
+                                    size: 18,
+                                    color: accentPetrol),
                               ),
                             ),
                           ),
@@ -3820,14 +3880,16 @@ class _FormState extends State<PrintFormScreen> {
                   ],
                   formCard(
                     title: 'Comentarios y Observaciones',
-                    subtitle: 'Notas adicionales sobre la impresión o incidencias',
+                    subtitle:
+                        'Notas adicionales sobre la impresión o incidencias',
                     child: TextField(
                       controller: notes,
                       minLines: 2,
                       maxLines: 4,
                       style: TextStyle(color: textPrimary, fontSize: 13),
                       decoration: fieldDecoration('Comentarios / Observaciones',
-                          hint: 'Notas sobre el acabado, tolerancias, propósito o incidencias'),
+                          hint:
+                              'Notas sobre el acabado, tolerancias, propósito o incidencias'),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -3844,8 +3906,6 @@ class _FormState extends State<PrintFormScreen> {
           ),
         ),
       );
-
-
 
   Widget _buildLiveConsumptionSummary() {
     final printerList = getSelectedPrinterList();
@@ -4097,7 +4157,9 @@ class _FormState extends State<PrintFormScreen> {
                   padding:
                       const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
                   child: Text(
-                    printerCount == 1 ? '1 impresión' : '$printerCount impresoras',
+                    printerCount == 1
+                        ? '1 impresión'
+                        : '$printerCount impresoras',
                     style: TextStyle(color: textSecondary, fontSize: 11),
                   ),
                 ),
@@ -4342,8 +4404,7 @@ class _FormState extends State<PrintFormScreen> {
                         style: TextStyle(color: textMuted, fontSize: 12),
                       ),
                     ),
-                    ...kMaterialBrands.map((b) =>
-                        DropdownMenuItem<String?>(
+                    ...kMaterialBrands.map((b) => DropdownMenuItem<String?>(
                           value: b,
                           child: Text(
                             b,
@@ -4385,8 +4446,7 @@ class _FormState extends State<PrintFormScreen> {
                         style: TextStyle(color: textMuted, fontSize: 12),
                       ),
                     ),
-                    ...kMaterialFinishes.map((f) =>
-                        DropdownMenuItem<String?>(
+                    ...kMaterialFinishes.map((f) => DropdownMenuItem<String?>(
                           value: f,
                           child: Text(f, style: const TextStyle(fontSize: 12)),
                         )),
@@ -4409,8 +4469,7 @@ class _FormState extends State<PrintFormScreen> {
                     child: TextField(
                       controller: m.customBrand,
                       style: TextStyle(color: textPrimary, fontSize: 13),
-                      decoration:
-                          fieldDecoration('Marca personalizada *'),
+                      decoration: fieldDecoration('Marca personalizada *'),
                       onChanged: (_) => setState(() {}),
                     ),
                   ),
@@ -4420,8 +4479,7 @@ class _FormState extends State<PrintFormScreen> {
                     child: TextField(
                       controller: m.customFinish,
                       style: TextStyle(color: textPrimary, fontSize: 13),
-                      decoration:
-                          fieldDecoration('Acabado personalizado *'),
+                      decoration: fieldDecoration('Acabado personalizado *'),
                       onChanged: (_) => setState(() {}),
                     ),
                   ),
@@ -5068,9 +5126,6 @@ class _AnalyticsState extends State<AnalyticsScreen> {
 
         // Stock de filamento en inventario
         final inventoryItems = widget.inventoryVm?.inventoryItems ?? [];
-        final totalStockGrams =
-            inventoryItems.fold(0.0, (s, i) => s + i.stockActual);
-        final spoolsInStock = totalStockGrams / 1000.0;
 
         // Desglose de materiales, colores, categorías y piezas
         final materialMap = <String, double>{};
@@ -5116,34 +5171,6 @@ class _AnalyticsState extends State<AnalyticsScreen> {
 
         final topPieces = pieceMap.values.toList()
           ..sort((a, b) => b.totalGrams.compareTo(a.totalGrams));
-
-        final lotAvg = displayedRecords.isEmpty
-            ? 0.0
-            : (displayedPieces / displayedRecords.length);
-
-        // Valor económico estimado del material consumido
-        final pricePerGramByMat = <String, double>{};
-        for (final item in inventoryItems) {
-          if (item.costPerGram > 0) {
-            pricePerGramByMat[item.material.trim().toUpperCase()] =
-                item.costPerGram;
-          }
-        }
-        final allCosts = inventoryItems
-            .where((i) => i.costPerGram > 0)
-            .map((i) => i.costPerGram);
-        final avgCostRate = allCosts.isNotEmpty
-            ? (allCosts.reduce((a, b) => a + b) / allCosts.length)
-            : 0.40;
-
-        double estimatedMaterialCost = 0.0;
-        for (final r in displayedRecords) {
-          for (final m in r.materials) {
-            final rate =
-                pricePerGramByMat[m.type.trim().toUpperCase()] ?? avgCostRate;
-            estimatedMaterialCost += (m.grams * r.cantidad) * rate;
-          }
-        }
 
         String topMaterialStr = 'Sin datos';
         if (materialMap.isNotEmpty) {
@@ -5213,7 +5240,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
               LayoutBuilder(
                 builder: (context, constraints) {
                   final columns = constraints.maxWidth >= 1060
-                      ? 4
+                      ? 3
                       : constraints.maxWidth >= 560
                           ? 2
                           : 1;
@@ -5245,17 +5272,6 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                               '${displayedRecords.length} trabajos/órdenes',
                           icon: Icons.precision_manufacturing_outlined,
                           iconColor: const Color(0xFF0071E3),
-                        ),
-                      ),
-                      SizedBox(
-                        width: cardWidth,
-                        child: _kpiCard(
-                          title: 'VALOR EN MATERIAL',
-                          value:
-                              '\$${estimatedMaterialCost.toStringAsFixed(0)}',
-                          subtitle: '${materialMap.length} plásticos usados',
-                          icon: Icons.payments_outlined,
-                          iconColor: const Color(0xFF34C759),
                         ),
                       ),
                       SizedBox(
@@ -5347,12 +5363,10 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Expanded(
-                          flex: 5,
                           child: _buildEvolutionCard(monthlyPoints),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          flex: 3,
                           child: _buildCategoryCard(
                             categoryMap,
                             displayedGrams,
@@ -5385,24 +5399,29 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                       ],
                     );
                   }
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 1,
-                        child: _buildTopPiecesCard(topPieces, displayedGrams),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 1,
-                        child: _buildMaterialAndColorCard(
-                          materialMap,
-                          colorMap,
-                          displayedGrams,
-                          inventoryItems,
+                  return IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _buildTopPiecesCard(
+                            topPieces,
+                            displayedGrams,
+                            fillHeight: true,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 1,
+                          child: _buildMaterialAndColorCard(
+                            materialMap,
+                            colorMap,
+                            displayedGrams,
+                            inventoryItems,
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -6115,10 +6134,15 @@ class _AnalyticsState extends State<AnalyticsScreen> {
   }
 
   // --- TARJETA 3: TOP 5 PIEZAS CON MAYOR CONSUMO ---
-  Widget _buildTopPiecesCard(List<_TopPieceStat> topPieces, double totalGrams) {
+  Widget _buildTopPiecesCard(
+    List<_TopPieceStat> topPieces,
+    double totalGrams, {
+    bool fillHeight = false,
+  }) {
     final highestGrams = topPieces.isEmpty ? 1.0 : topPieces.first.totalGrams;
 
     return Container(
+      key: const ValueKey('analytics_top_pieces_card'),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: surfaceCard,
@@ -6146,15 +6170,26 @@ class _AnalyticsState extends State<AnalyticsScreen> {
           ),
           const SizedBox(height: 16),
           if (topPieces.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: Text(
-                  'No hay piezas registradas en el periodo',
-                  style: TextStyle(color: textSecondary, fontSize: 12),
-                ),
-              ),
-            )
+            fillHeight
+                ? Expanded(
+                    child: Center(
+                      child: Text(
+                        'No hay piezas registradas en el periodo',
+                        style: TextStyle(color: textSecondary, fontSize: 12),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'No hay piezas registradas en el periodo',
+                        style: TextStyle(color: textSecondary, fontSize: 12),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
           else
             Column(
               children: topPieces.asMap().entries.map((e) {
@@ -6256,6 +6291,7 @@ class _AnalyticsState extends State<AnalyticsScreen> {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Container(
+      key: const ValueKey('analytics_material_color_card'),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: surfaceCard,
@@ -6385,8 +6421,8 @@ class _AnalyticsState extends State<AnalyticsScreen> {
                           value: pct.clamp(0.01, 1.0),
                           minHeight: 4,
                           backgroundColor: surfaceElevated,
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                              accentPetrol),
+                          valueColor:
+                              const AlwaysStoppedAnimation<Color>(accentPetrol),
                         ),
                       ),
                     ],
@@ -6469,42 +6505,6 @@ class _AnalyticsState extends State<AnalyticsScreen> {
               }).toList(),
             ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-      decoration: BoxDecoration(
-        color: surfaceCard,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderSubtle),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.bar_chart_outlined, size: 44, color: textMuted),
-            const SizedBox(height: 12),
-            Text(
-              'No hay registros de producción en este periodo',
-              style: TextStyle(
-                color: textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Prueba seleccionando otro rango temporal en la barra superior.',
-              style: TextStyle(
-                color: textSecondary,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -6599,8 +6599,7 @@ class _ExportState extends State<ExportScreen> {
       final location = await getSaveLocation(
         suggestedName: fileName,
         acceptedTypeGroups: [
-          XTypeGroup(
-              label: extension.toUpperCase(), extensions: [extension]),
+          XTypeGroup(label: extension.toUpperCase(), extensions: [extension]),
         ],
       );
       if (location == null) return;
@@ -6696,12 +6695,16 @@ class _ExportState extends State<ExportScreen> {
 
   List<PrintRecord> get _availablePrints {
     final filtered = _filteredPrints;
-    return filtered.where((record) => selectedPrint.contains(record.id)).toList();
+    return filtered
+        .where((record) => selectedPrint.contains(record.id))
+        .toList();
   }
 
   List<InventoryItem> get _availableInventory {
     final filtered = _filteredInventory;
-    return filtered.where((item) => selectedInventory.contains(item.id)).toList();
+    return filtered
+        .where((item) => selectedInventory.contains(item.id))
+        .toList();
   }
 
   bool get _areAllVisibleSelected {
@@ -6899,8 +6902,7 @@ class _ExportState extends State<ExportScreen> {
     String sheetName = 'Agosto- Diciembre 2026';
 
     try {
-      final templateData =
-          await rootBundle.load('assets/cmi_template.xlsx');
+      final templateData = await rootBundle.load('assets/cmi_template.xlsx');
       final templateBytes = templateData.buffer.asUint8List();
       excel = excel_pkg.Excel.decodeBytes(templateBytes);
       if (excel.tables.isNotEmpty) {
@@ -7129,7 +7131,6 @@ class _ExportState extends State<ExportScreen> {
         'xlsx');
   }
 
-
   Future<void> _saveInventoryPdf(List<List<String>> rows) async {
     final pdf = pw.Document();
     pdf.addPage(
@@ -7236,10 +7237,12 @@ class _ExportState extends State<ExportScreen> {
 
     final totalPieces =
         tab == 0 ? _availablePrints.fold<int>(0, (s, r) => s + r.cantidad) : 0;
-    final totalGrams =
-        tab == 0 ? _availablePrints.fold<double>(0.0, (s, r) => s + r.totalGrams) : 0.0;
-    final totalStock =
-        tab == 1 ? _availableInventory.fold<double>(0.0, (s, i) => s + i.stockActual) : 0.0;
+    final totalGrams = tab == 0
+        ? _availablePrints.fold<double>(0.0, (s, r) => s + r.totalGrams)
+        : 0.0;
+    final totalStock = tab == 1
+        ? _availableInventory.fold<double>(0.0, (s, i) => s + i.stockActual)
+        : 0.0;
 
     return Scaffold(
       appBar: darkAppBar(
@@ -7252,332 +7255,324 @@ class _ExportState extends State<ExportScreen> {
         hideLeading: widget.isPinned,
       ),
       backgroundColor: bgBase,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1300),
-          child: Column(
-            children: [
-              // Segmented Tabs
-              Container(
-                margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: surfaceCard,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: borderSubtle),
+      body: Column(
+        children: [
+          // Segmented Tabs
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: surfaceCard,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: borderSubtle),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _tabButton(
+                      'IMPRESIONES (${widget.vm.allRecords.length})',
+                      0,
+                      Icons.layers_outlined),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _tabButton(
-                          'IMPRESIONES (${widget.vm.allRecords.length})',
-                          0,
-                          Icons.layers_outlined),
+                Expanded(
+                  child: _tabButton(
+                      'INVENTARIO (${inventory.inventoryItems.length})',
+                      1,
+                      Icons.inventory_2_outlined),
+                ),
+              ],
+            ),
+          ),
+
+          // Barra de Búsqueda y Filtros
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: surfaceCard,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: borderSubtle),
+            ),
+            child: Row(
+              children: [
+                // Campo de Búsqueda Rápida
+                Expanded(
+                  flex: 3,
+                  child: Container(
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: surfaceElevated,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: borderSubtle),
                     ),
-                    Expanded(
-                      child: _tabButton(
-                          'INVENTARIO (${inventory.inventoryItems.length})',
-                          1,
-                          Icons.inventory_2_outlined),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Barra de Búsqueda y Filtros
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: surfaceCard,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: borderSubtle),
-                ),
-                child: Row(
-                  children: [
-                    // Campo de Búsqueda Rápida
-                    Expanded(
-                      flex: 3,
-                      child: Container(
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: surfaceElevated,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: borderSubtle),
-                        ),
-                        child: TextField(
-                          controller: _searchCtrl,
-                          onChanged: (v) => setState(() => searchQuery = v),
-                          style: TextStyle(color: textPrimary, fontSize: 12),
-                          decoration: InputDecoration(
-                            hintText: tab == 0
-                                ? 'Buscar por pieza, material o categoría...'
-                                : 'Buscar por material, color o marca...',
-                            hintStyle:
-                                TextStyle(color: textMuted, fontSize: 12),
-                            prefixIcon: Icon(Icons.search,
-                                size: 16, color: textSecondary),
-                            suffixIcon: searchQuery.isNotEmpty
-                                ? IconButton(
-                                    icon: Icon(Icons.close,
-                                        size: 14, color: textSecondary),
-                                    onPressed: () {
-                                      _searchCtrl.clear();
-                                      setState(() => searchQuery = '');
-                                    },
-                                  )
-                                : null,
-                            border: InputBorder.none,
-                            contentPadding:
-                                const EdgeInsets.symmetric(vertical: 9),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(width: 10),
-
-                    // Selector de Periodo (solo en tab Impresiones)
-                    if (tab == 0) ...[
-                      Container(
-                        height: 36,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: surfaceElevated,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: borderSubtle),
-                        ),
-                        child: DropdownButton<String>(
-                          value: period,
-                          underline: const SizedBox(),
-                          dropdownColor: surfaceElevated,
-                          icon: Icon(Icons.arrow_drop_down,
-                              color: textSecondary, size: 18),
-                          items: const [
-                            DropdownMenuItem(
-                                value: 'HOY',
-                                child: Text('Hoy',
-                                    style: TextStyle(fontSize: 12))),
-                            DropdownMenuItem(
-                                value: '7 DÍAS',
-                                child: Text('Últimos 7 días',
-                                    style: TextStyle(fontSize: 12))),
-                            DropdownMenuItem(
-                                value: 'ESTE MES',
-                                child: Text('Este mes',
-                                    style: TextStyle(fontSize: 12))),
-                            DropdownMenuItem(
-                                value: 'TODOS',
-                                child: Text('Histórico completo',
-                                    style: TextStyle(fontSize: 12))),
-                          ],
-                          onChanged: (v) =>
-                              setState(() => period = v ?? 'ESTE MES'),
-                          style: TextStyle(
-                            color: textPrimary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                    ],
-
-                    // Botón Seleccionar Visibles
-                    InkWell(
-                      onTap: _toggleSelectAll,
-                      borderRadius: BorderRadius.circular(6),
-                      child: Container(
-                        height: 36,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        decoration: BoxDecoration(
-                          color: _areAllVisibleSelected
-                              ? accentPetrol.withValues(alpha: 0.12)
-                              : surfaceElevated,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: _areAllVisibleSelected
-                                ? accentPetrol
-                                : borderSubtle,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _areAllVisibleSelected
-                                  ? Icons.check_box
-                                  : Icons.check_box_outline_blank,
-                              size: 16,
-                              color: _areAllVisibleSelected
-                                  ? accentPetrol
-                                  : textSecondary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _areAllVisibleSelected
-                                  ? 'Deseleccionar'
-                                  : 'Todos ($visibleCount)',
-                              style: TextStyle(
-                                color: _areAllVisibleSelected
-                                    ? accentPetrol
-                                    : textSecondary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // KPI Live Summary Bar
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: surfaceCard,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: borderSubtle),
-                ),
-                child: Row(
-                  children: [
-                    _kpiChip(
-                      Icons.checklist_rounded,
-                      '$selectedCount de $visibleCount seleccionados',
-                      color: accentPetrol,
-                    ),
-                    const SizedBox(width: 18),
-                    if (tab == 0) ...[
-                      _kpiChip(Icons.layers_outlined, '$totalPieces piezas'),
-                      const SizedBox(width: 18),
-                      _kpiChip(Icons.scale_outlined,
-                          '${totalGrams.toStringAsFixed(1)} g consumo'),
-                    ] else ...[
-                      _kpiChip(Icons.inventory_2_outlined,
-                          '${totalStock.toStringAsFixed(0)} g stock'),
-                    ],
-                  ],
-                ),
-              ),
-
-              // Lista Tabular de Registros
-              Expanded(
-                child: Container(
-                  margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                  decoration: BoxDecoration(
-                    color: surfaceCard,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: borderSubtle),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LayoutBuilder(builder: (context, constraints) {
-                      final isWide = constraints.maxWidth >= 720;
-
-                      if (tab == 0) {
-                        if (prints.isEmpty) {
-                          return _emptyState('No hay impresiones en este periodo o filtro');
-                        }
-                        return Column(
-                          children: [
-                            if (isWide) _printsTableHeader(),
-                            Expanded(
-                              child: ListView.separated(
-                                itemCount: prints.length,
-                                separatorBuilder: (_, __) =>
-                                    Divider(height: 1, color: borderSubtle),
-                                itemBuilder: (_, index) {
-                                  final r = prints[index];
-                                  final checked = selectedPrint.contains(r.id);
-                                  return _printTableRow(r, checked, isWide);
+                    child: TextField(
+                      controller: _searchCtrl,
+                      onChanged: (v) => setState(() => searchQuery = v),
+                      style: TextStyle(color: textPrimary, fontSize: 12),
+                      decoration: InputDecoration(
+                        hintText: tab == 0
+                            ? 'Buscar por pieza, material o categoría...'
+                            : 'Buscar por material, color o marca...',
+                        hintStyle: TextStyle(color: textMuted, fontSize: 12),
+                        prefixIcon:
+                            Icon(Icons.search, size: 16, color: textSecondary),
+                        suffixIcon: searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: Icon(Icons.close,
+                                    size: 14, color: textSecondary),
+                                onPressed: () {
+                                  _searchCtrl.clear();
+                                  setState(() => searchQuery = '');
                                 },
-                              ),
-                            ),
-                          ],
-                        );
-                      } else {
-                        if (inventoryList.isEmpty) {
-                          return _emptyState('No hay materiales en este filtro');
-                        }
-                        return Column(
-                          children: [
-                            if (isWide) _inventoryTableHeader(),
-                            Expanded(
-                              child: ListView.separated(
-                                itemCount: inventoryList.length,
-                                separatorBuilder: (_, __) =>
-                                    Divider(height: 1, color: borderSubtle),
-                                itemBuilder: (_, index) {
-                                  final item = inventoryList[index];
-                                  final checked =
-                                      selectedInventory.contains(item.id);
-                                  return _inventoryTableRow(
-                                      item, checked, isWide);
-                                },
-                              ),
-                            ),
-                          ],
-                        );
-                      }
-                    }),
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 9),
+                      ),
+                    ),
                   ),
                 ),
-              ),
 
-              // Bottom Action Bar
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: surfaceCard,
-                  border: Border(top: BorderSide(color: borderSubtle)),
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      selectedCount == 0
-                          ? 'Ningún registro seleccionado'
-                          : '$selectedCount listo${selectedCount > 1 ? 's' : ''} para exportar',
+                const SizedBox(width: 10),
+
+                // Selector de Periodo (solo en tab Impresiones)
+                if (tab == 0) ...[
+                  Container(
+                    height: 36,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: surfaceElevated,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: borderSubtle),
+                    ),
+                    child: DropdownButton<String>(
+                      value: period,
+                      underline: const SizedBox(),
+                      dropdownColor: surfaceElevated,
+                      icon: Icon(Icons.arrow_drop_down,
+                          color: textSecondary, size: 18),
+                      items: const [
+                        DropdownMenuItem(
+                            value: 'HOY',
+                            child: Text('Hoy', style: TextStyle(fontSize: 12))),
+                        DropdownMenuItem(
+                            value: '7 DÍAS',
+                            child: Text('Últimos 7 días',
+                                style: TextStyle(fontSize: 12))),
+                        DropdownMenuItem(
+                            value: 'ESTE MES',
+                            child: Text('Este mes',
+                                style: TextStyle(fontSize: 12))),
+                        DropdownMenuItem(
+                            value: 'TODOS',
+                            child: Text('Histórico completo',
+                                style: TextStyle(fontSize: 12))),
+                      ],
+                      onChanged: (v) =>
+                          setState(() => period = v ?? 'ESTE MES'),
                       style: TextStyle(
-                        color: selectedCount > 0 ? textPrimary : textMuted,
+                        color: textPrimary,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const Spacer(),
-                    SizedBox(
-                      width: 175,
-                      child: techButton(
-                        'EXPORTAR PDF ($selectedCount)',
-                        () => _export(context, 'PDF'),
-                        icon: Icons.picture_as_pdf_outlined,
-                        color: surfaceElevated,
-                        foreground: textPrimary,
-                        isOutlined: true,
-                        height: 40,
+                  ),
+                  const SizedBox(width: 10),
+                ],
+
+                // Botón Seleccionar Visibles
+                InkWell(
+                  onTap: _toggleSelectAll,
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    height: 36,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: _areAllVisibleSelected
+                          ? accentPetrol.withValues(alpha: 0.12)
+                          : surfaceElevated,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _areAllVisibleSelected
+                            ? accentPetrol
+                            : borderSubtle,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    SizedBox(
-                      width: 185,
-                      child: techButton(
-                        'EXPORTAR EXCEL ($selectedCount)',
-                        () => _export(context, 'Excel'),
-                        icon: Icons.table_chart_outlined,
-                        color: accentPetrol,
-                        foreground: Colors.white,
-                        height: 40,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _areAllVisibleSelected
+                              ? Icons.check_box
+                              : Icons.check_box_outline_blank,
+                          size: 16,
+                          color: _areAllVisibleSelected
+                              ? accentPetrol
+                              : textSecondary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _areAllVisibleSelected
+                              ? 'Deseleccionar'
+                              : 'Todos ($visibleCount)',
+                          style: TextStyle(
+                            color: _areAllVisibleSelected
+                                ? accentPetrol
+                                : textSecondary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+
+          // KPI Live Summary Bar
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: surfaceCard,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: borderSubtle),
+            ),
+            child: Row(
+              children: [
+                _kpiChip(
+                  Icons.checklist_rounded,
+                  '$selectedCount de $visibleCount seleccionados',
+                  color: accentPetrol,
+                ),
+                const SizedBox(width: 18),
+                if (tab == 0) ...[
+                  _kpiChip(Icons.layers_outlined, '$totalPieces piezas'),
+                  const SizedBox(width: 18),
+                  _kpiChip(Icons.scale_outlined,
+                      '${totalGrams.toStringAsFixed(1)} g consumo'),
+                ] else ...[
+                  _kpiChip(Icons.inventory_2_outlined,
+                      '${totalStock.toStringAsFixed(0)} g stock'),
+                ],
+              ],
+            ),
+          ),
+
+          // Lista Tabular de Registros
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              decoration: BoxDecoration(
+                color: surfaceCard,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: borderSubtle),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LayoutBuilder(builder: (context, constraints) {
+                  final isWide = constraints.maxWidth >= 720;
+
+                  if (tab == 0) {
+                    if (prints.isEmpty) {
+                      return _emptyState(
+                          'No hay impresiones en este periodo o filtro');
+                    }
+                    return Column(
+                      children: [
+                        if (isWide) _printsTableHeader(),
+                        Expanded(
+                          child: ListView.separated(
+                            itemCount: prints.length,
+                            separatorBuilder: (_, __) =>
+                                Divider(height: 1, color: borderSubtle),
+                            itemBuilder: (_, index) {
+                              final r = prints[index];
+                              final checked = selectedPrint.contains(r.id);
+                              return _printTableRow(r, checked, isWide);
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  } else {
+                    if (inventoryList.isEmpty) {
+                      return _emptyState('No hay materiales en este filtro');
+                    }
+                    return Column(
+                      children: [
+                        if (isWide) _inventoryTableHeader(),
+                        Expanded(
+                          child: ListView.separated(
+                            itemCount: inventoryList.length,
+                            separatorBuilder: (_, __) =>
+                                Divider(height: 1, color: borderSubtle),
+                            itemBuilder: (_, index) {
+                              final item = inventoryList[index];
+                              final checked =
+                                  selectedInventory.contains(item.id);
+                              return _inventoryTableRow(item, checked, isWide);
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+                }),
+              ),
+            ),
+          ),
+
+          // Bottom Action Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: surfaceCard,
+              border: Border(top: BorderSide(color: borderSubtle)),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  selectedCount == 0
+                      ? 'Ningún registro seleccionado'
+                      : '$selectedCount listo${selectedCount > 1 ? 's' : ''} para exportar',
+                  style: TextStyle(
+                    color: selectedCount > 0 ? textPrimary : textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                SizedBox(
+                  width: 175,
+                  child: techButton(
+                    'EXPORTAR PDF ($selectedCount)',
+                    () => _export(context, 'PDF'),
+                    icon: Icons.picture_as_pdf_outlined,
+                    color: surfaceElevated,
+                    foreground: textPrimary,
+                    isOutlined: true,
+                    height: 40,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 185,
+                  child: techButton(
+                    'EXPORTAR EXCEL ($selectedCount)',
+                    () => _export(context, 'Excel'),
+                    icon: Icons.table_chart_outlined,
+                    color: accentPetrol,
+                    foreground: Colors.white,
+                    height: 40,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -7689,9 +7684,8 @@ class _ExportState extends State<ExportScreen> {
   }
 
   Widget _printTableRow(PrintRecord r, bool checked, bool isWide) {
-    final title = (r.projectName ?? '').trim().isNotEmpty
-        ? r.projectName!
-        : r.pieceType;
+    final title =
+        (r.projectName ?? '').trim().isNotEmpty ? r.projectName! : r.pieceType;
 
     return InkWell(
       onTap: () => setState(() {
@@ -7703,7 +7697,8 @@ class _ExportState extends State<ExportScreen> {
       }),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        color: checked ? accentPetrol.withValues(alpha: 0.06) : Colors.transparent,
+        color:
+            checked ? accentPetrol.withValues(alpha: 0.06) : Colors.transparent,
         child: isWide
             ? Row(
                 children: [
@@ -7769,13 +7764,12 @@ class _ExportState extends State<ExportScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             colorSwatchCircle(colorObj.color,
-                                size: 8,
-                                isTransparent: colorObj.isTransparent),
+                                size: 8, isTransparent: colorObj.isTransparent),
                             const SizedBox(width: 4),
                             Text(
                               '${m.type} $colName',
-                              style: TextStyle(
-                                  color: textSecondary, fontSize: 11),
+                              style:
+                                  TextStyle(color: textSecondary, fontSize: 11),
                             ),
                           ],
                         );
@@ -7931,7 +7925,8 @@ class _ExportState extends State<ExportScreen> {
       }),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        color: checked ? accentPetrol.withValues(alpha: 0.06) : Colors.transparent,
+        color:
+            checked ? accentPetrol.withValues(alpha: 0.06) : Colors.transparent,
         child: isWide
             ? Row(
                 children: [
@@ -7990,8 +7985,7 @@ class _ExportState extends State<ExportScreen> {
                             ),
                             Text(
                               '${(ratio * 100).toInt()}%',
-                              style: TextStyle(
-                                  color: textMuted, fontSize: 10),
+                              style: TextStyle(color: textMuted, fontSize: 10),
                             ),
                           ],
                         ),
@@ -8207,7 +8201,7 @@ class _InventoryState extends State<InventoryScreen> {
 
           final availableMaterials = [
             'Todos',
-            ...vm.inventoryItems.map((x) => x.material).toSet().toList()
+            ...vm.inventoryItems.map((x) => x.material).toSet(),
           ];
 
           return Scaffold(
@@ -8255,218 +8249,210 @@ class _InventoryState extends State<InventoryScreen> {
               ],
             ),
             backgroundColor: bgBase,
-            body: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1300),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (vm.error != null) ...[
+                    _databaseError(vm.error!),
+                    const SizedBox(height: 10),
+                  ],
+
+                  // 2. Barra de Búsqueda y Filtros Rápidos
+                  Row(
                     children: [
-                      if (vm.error != null) ...[
-                        _databaseError(vm.error!),
-                        const SizedBox(height: 10),
-                      ],
-
-                      // 2. Barra de Búsqueda y Filtros Rápidos
-                      Row(
-                        children: [
-                          // Buscador compacto
-                          Expanded(
-                            flex: 3,
-                            child: SizedBox(
-                              height: 38,
-                              child: TextField(
-                                controller: _searchCtrl,
-                                onChanged: (x) => setState(() => search = x),
-                                style:
-                                    TextStyle(color: textPrimary, fontSize: 13),
-                                decoration: InputDecoration(
-                                  hintText:
-                                      'Buscar material, color, marca o ubicación...',
-                                  hintStyle:
-                                      TextStyle(color: textMuted, fontSize: 12),
-                                  prefixIcon: Icon(Icons.search,
-                                      color: textSecondary, size: 17),
-                                  suffixIcon: search.isNotEmpty
-                                      ? IconButton(
-                                          icon: Icon(Icons.clear,
-                                              size: 14, color: textSecondary),
-                                          onPressed: () {
-                                            _searchCtrl.clear();
-                                            setState(() => search = '');
-                                          },
-                                        )
-                                      : null,
-                                  filled: true,
-                                  fillColor: surfaceCard,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 0),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: borderSubtle),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: borderSubtle),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(
-                                        color: accentPetrol, width: 1.2),
-                                  ),
-                                ),
+                      // Buscador compacto
+                      Expanded(
+                        flex: 3,
+                        child: SizedBox(
+                          height: 38,
+                          child: TextField(
+                            controller: _searchCtrl,
+                            onChanged: (x) => setState(() => search = x),
+                            style: TextStyle(color: textPrimary, fontSize: 13),
+                            decoration: InputDecoration(
+                              hintText:
+                                  'Buscar material, color, marca o ubicación...',
+                              hintStyle:
+                                  TextStyle(color: textMuted, fontSize: 12),
+                              prefixIcon: Icon(Icons.search,
+                                  color: textSecondary, size: 17),
+                              suffixIcon: search.isNotEmpty
+                                  ? IconButton(
+                                      icon: Icon(Icons.clear,
+                                          size: 14, color: textSecondary),
+                                      onPressed: () {
+                                        _searchCtrl.clear();
+                                        setState(() => search = '');
+                                      },
+                                    )
+                                  : null,
+                              filled: true,
+                              fillColor: surfaceCard,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 0),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: borderSubtle),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: borderSubtle),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(
+                                    color: accentPetrol, width: 1.2),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
-
-                          // Selector de Vista (Cuadrícula / Lista)
-                          Container(
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: surfaceCard,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: borderSubtle),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  tooltip: 'Cuadrícula',
-                                  visualDensity: VisualDensity.compact,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6),
-                                  icon: Icon(Icons.grid_view_rounded,
-                                      size: 16,
-                                      color: isGridView
-                                          ? accentPetrol
-                                          : textSecondary),
-                                  onPressed: () =>
-                                      setState(() => isGridView = true),
-                                ),
-                                IconButton(
-                                  tooltip: 'Lista',
-                                  visualDensity: VisualDensity.compact,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6),
-                                  icon: Icon(Icons.view_list_rounded,
-                                      size: 16,
-                                      color: !isGridView
-                                          ? accentPetrol
-                                          : textSecondary),
-                                  onPressed: () =>
-                                      setState(() => isGridView = false),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(width: 12),
 
-                      // 3. Fila de Filtros de Material y Estado Horizontal
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
+                      // Selector de Vista (Cuadrícula / Lista)
+                      Container(
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: surfaceCard,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: borderSubtle),
+                        ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            ...availableMaterials.map((mat) {
-                              final isSel = materialFilter == mat;
-                              final count = mat == 'Todos'
-                                  ? vm.inventoryItems.length
-                                  : vm.inventoryItems
-                                      .where((i) => i.material == mat)
-                                      .length;
-                              return _filterChip(
-                                '$mat ($count)',
-                                isSel,
-                                () => setState(() => materialFilter = mat),
-                              );
-                            }),
-                            const SizedBox(width: 6),
-                            Container(
-                              height: 18,
-                              width: 1,
-                              color: borderSubtle,
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                            IconButton(
+                              tooltip: 'Cuadrícula',
+                              visualDensity: VisualDensity.compact,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 6),
+                              icon: Icon(Icons.grid_view_rounded,
+                                  size: 16,
+                                  color: isGridView
+                                      ? accentPetrol
+                                      : textSecondary),
+                              onPressed: () =>
+                                  setState(() => isGridView = true),
                             ),
-                            const SizedBox(width: 6),
-                            _filterChip(
-                              'Todos los estados',
-                              statusFilter == 'Todos',
-                              () => setState(() => statusFilter = 'Todos'),
+                            IconButton(
+                              tooltip: 'Lista',
+                              visualDensity: VisualDensity.compact,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 6),
+                              icon: Icon(Icons.view_list_rounded,
+                                  size: 16,
+                                  color: !isGridView
+                                      ? accentPetrol
+                                      : textSecondary),
+                              onPressed: () =>
+                                  setState(() => isGridView = false),
                             ),
-                            if (vm.lowStockCount > 0)
-                              _filterChip(
-                                'Bajo Stock (${vm.lowStockCount})',
-                                statusFilter == 'Bajo',
-                                () => setState(() => statusFilter = 'Bajo'),
-                                isAlert: true,
-                              ),
-                            if (vm.depletedStockCount > 0)
-                              _filterChip(
-                                'Agotadas (${vm.depletedStockCount})',
-                                statusFilter == 'Agotados',
-                                () => setState(() => statusFilter = 'Agotados'),
-                              ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 14),
-
-                      // 4. Catálogo de Bobinas (Grid o Tabla)
-                      Expanded(
-                        child: items.isEmpty
-                            ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.inventory_2_outlined,
-                                      size: 40,
-                                      color:
-                                          textSecondary.withValues(alpha: 0.35),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      search.isNotEmpty ||
-                                              statusFilter != 'Todos' ||
-                                              materialFilter != 'Todos'
-                                          ? 'No se encontraron bobinas con estos filtros'
-                                          : 'No hay bobinas registradas',
-                                      style: TextStyle(
-                                          color: textSecondary,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w500),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : isGridView
-                                ? GridView.builder(
-                                    padding: const EdgeInsets.only(bottom: 16),
-                                    gridDelegate:
-                                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                                      maxCrossAxisExtent: 380,
-                                      mainAxisExtent: 178,
-                                      crossAxisSpacing: 12,
-                                      mainAxisSpacing: 12,
-                                    ),
-                                    itemCount: items.length,
-                                    itemBuilder: (_, index) =>
-                                        _inventoryCard(items[index]),
-                                  )
-                                : _inventoryTable(items),
-                      ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 10),
+
+                  // 3. Fila de Filtros de Material y Estado Horizontal
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        ...availableMaterials.map((mat) {
+                          final isSel = materialFilter == mat;
+                          final count = mat == 'Todos'
+                              ? vm.inventoryItems.length
+                              : vm.inventoryItems
+                                  .where((i) => i.material == mat)
+                                  .length;
+                          return _filterChip(
+                            '$mat ($count)',
+                            isSel,
+                            () => setState(() => materialFilter = mat),
+                          );
+                        }),
+                        const SizedBox(width: 6),
+                        Container(
+                          height: 18,
+                          width: 1,
+                          color: borderSubtle,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                        ),
+                        const SizedBox(width: 6),
+                        _filterChip(
+                          'Todos los estados',
+                          statusFilter == 'Todos',
+                          () => setState(() => statusFilter = 'Todos'),
+                        ),
+                        if (vm.lowStockCount > 0)
+                          _filterChip(
+                            'Bajo Stock (${vm.lowStockCount})',
+                            statusFilter == 'Bajo',
+                            () => setState(() => statusFilter = 'Bajo'),
+                            isAlert: true,
+                          ),
+                        if (vm.depletedStockCount > 0)
+                          _filterChip(
+                            'Agotadas (${vm.depletedStockCount})',
+                            statusFilter == 'Agotados',
+                            () => setState(() => statusFilter = 'Agotados'),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 4. Catálogo de Bobinas (Grid o Tabla)
+                  Expanded(
+                    child: items.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.inventory_2_outlined,
+                                  size: 40,
+                                  color: textSecondary.withValues(alpha: 0.35),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  search.isNotEmpty ||
+                                          statusFilter != 'Todos' ||
+                                          materialFilter != 'Todos'
+                                      ? 'No se encontraron bobinas con estos filtros'
+                                      : 'No hay bobinas registradas',
+                                  style: TextStyle(
+                                      color: textSecondary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                          )
+                        : isGridView
+                            ? GridView.builder(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                gridDelegate:
+                                    const SliverGridDelegateWithMaxCrossAxisExtent(
+                                  maxCrossAxisExtent: 380,
+                                  mainAxisExtent: 178,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                ),
+                                itemCount: items.length,
+                                itemBuilder: (_, index) =>
+                                    _inventoryCard(items[index]),
+                              )
+                            : _inventoryTable(items),
+                  ),
+                ],
               ),
             ),
           );
         },
       );
-
 
   Widget _databaseError(String message) => Container(
         width: double.infinity,
@@ -8578,7 +8564,6 @@ class _InventoryState extends State<InventoryScreen> {
               else if (low)
                 _statusBadge('BAJO STOCK', semanticDanger),
               const SizedBox(width: 4),
-
               PopupMenuButton<String>(
                 tooltip: 'Opciones',
                 icon: Icon(Icons.more_horiz_rounded,
@@ -8718,7 +8703,8 @@ class _InventoryState extends State<InventoryScreen> {
                 Text(' · ♨ ${item.tempNozzle}°C',
                     style: TextStyle(color: textSecondary, fontSize: 10)),
               ],
-              if (item.location != null && item.location!.trim().isNotEmpty) ...[
+              if (item.location != null &&
+                  item.location!.trim().isNotEmpty) ...[
                 Text(' · 📍 ${item.location}',
                     style: TextStyle(color: textSecondary, fontSize: 10),
                     maxLines: 1,
@@ -8877,8 +8863,8 @@ class _InventoryState extends State<InventoryScreen> {
                 ),
                 IconButton(
                   tooltip: 'Editar',
-                  icon: Icon(Icons.edit_outlined,
-                      size: 16, color: textSecondary),
+                  icon:
+                      Icon(Icons.edit_outlined, size: 16, color: textSecondary),
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -9523,7 +9509,8 @@ class _AddProductState extends State<AddProductScreen> {
                         children: [
                           DropdownButtonFormField<String>(
                             isExpanded: true,
-                            initialValue: customMaterial ? '__custom' : material,
+                            initialValue:
+                                customMaterial ? '__custom' : material,
                             dropdownColor: surfaceElevated,
                             style: TextStyle(color: textPrimary, fontSize: 13),
                             iconEnabledColor: textSecondary,
@@ -9578,8 +9565,8 @@ class _AddProductState extends State<AddProductScreen> {
                         items: InventoryViewModel.defaultFinishes
                             .map((f) => DropdownMenuItem(
                                 value: f,
-                                child: Text(f,
-                                    overflow: TextOverflow.ellipsis)))
+                                child:
+                                    Text(f, overflow: TextOverflow.ellipsis)))
                             .toList(),
                         onChanged: (val) {
                           if (val != null) setState(() => finish = val);
@@ -9676,10 +9663,9 @@ class _AddProductState extends State<AddProductScreen> {
                           final enteredHex = entered.startsWith('#')
                               ? entered.substring(1)
                               : entered;
-                          final isHex =
-                              (enteredHex.length == 6 ||
-                                      enteredHex.length == 8) &&
-                                  int.tryParse(enteredHex, radix: 16) != null;
+                          final isHex = (enteredHex.length == 6 ||
+                                  enteredHex.length == 8) &&
+                              int.tryParse(enteredHex, radix: 16) != null;
                           setState(() {
                             color = x;
                             if (matchingPreset.isNotEmpty) {

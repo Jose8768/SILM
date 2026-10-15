@@ -1,60 +1,42 @@
 $ErrorActionPreference = 'Stop'
 
-$source = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$destination = 'C:\VX3D'
-$generatedPlatformDirectories = @(
-    'linux\flutter\ephemeral',
-    'macos\Flutter\ephemeral'
-)
+$source = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path.TrimEnd('\')
+$sourceParent = Split-Path -Parent $source
+$projectFolder = Split-Path -Leaf $source
+$driveLetter = 'V'
+$drive = "${driveLetter}:"
+$mappingPrefix = "${driveLetter}:\: => "
+$mappings = @(& subst.exe)
+$existingMapping = $mappings | Where-Object { $_.StartsWith($mappingPrefix, [StringComparison]::OrdinalIgnoreCase) }
+$existingDrive = Get-PSDrive -Name $driveLetter -ErrorAction SilentlyContinue
 
-if (Test-Path -LiteralPath $destination) {
-    $item = Get-Item -LiteralPath $destination -Force
-    if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
-        if ($item.Target -notcontains $source) {
-            throw "Refusing to replace unexpected reparse point at $destination."
+if ($existingMapping) {
+    $mappedPath = $existingMapping.Substring($mappingPrefix.Length).TrimEnd('\')
+    if (-not [string]::Equals($mappedPath, $sourceParent, [StringComparison]::OrdinalIgnoreCase)) {
+        $isPreviousProjectMapping =
+            [string]::Equals($mappedPath, $source, [StringComparison]::OrdinalIgnoreCase)
+        $isStaleMapping = -not (Test-Path -LiteralPath $mappedPath -PathType Container)
+        if (-not $isPreviousProjectMapping -and -not $isStaleMapping) {
+            throw "$drive is already mapped to '$mappedPath'; it must be free or map to '$sourceParent'."
         }
-        & cmd.exe /c "rmdir `"$destination`""
+
+        & subst.exe $drive /D
         if ($LASTEXITCODE -ne 0) {
-            throw "Could not remove the old project junction at $destination."
+            throw "Could not remove the stale $drive mapping to '$mappedPath'."
+        }
+
+        & subst.exe $drive $sourceParent
+        if ($LASTEXITCODE -ne 0) {
+            throw "Could not map $drive to '$sourceParent'."
         }
     }
-}
-
-New-Item -ItemType Directory -Path $destination -Force | Out-Null
-
-$generatedPlatformDirectories | ForEach-Object {
-    $generatedPath = Join-Path $destination $_
-    if (Test-Path -LiteralPath $generatedPath) {
-        Remove-Item -LiteralPath $generatedPath -Recurse -Force
+} elseif ($existingDrive) {
+    throw "$drive is already assigned. Free it or choose another drive letter in the Windows launch configuration."
+} else {
+    & subst.exe $drive $sourceParent
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not map $drive to '$sourceParent'."
     }
 }
 
-$excludedDirectories = @(
-    (Join-Path $source 'build'),
-    (Join-Path $source '.dart_tool'),
-    (Join-Path $source '.git'),
-    (Join-Path $source 'windows\flutter\ephemeral')
-) + ($generatedPlatformDirectories | ForEach-Object {
-    Join-Path $source $_
-})
-$robocopyArguments = @(
-    $source,
-    $destination,
-    '/MIR',
-    '/XD'
-) + $excludedDirectories + @(
-    '/R:2',
-    '/W:1',
-    '/NFL',
-    '/NDL',
-    '/NJH',
-    '/NJS',
-    '/NP'
-)
-
-& robocopy.exe @robocopyArguments
-if ($LASTEXITCODE -ge 8) {
-    throw "Failed to synchronize project files to $destination (robocopy exit code $LASTEXITCODE)."
-}
-
-Write-Output "Prepared Windows project at $destination."
+Write-Output "Windows project path ready at $(Join-Path "$drive\" $projectFolder)."

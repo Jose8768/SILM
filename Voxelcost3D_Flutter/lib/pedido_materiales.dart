@@ -455,18 +455,10 @@ class PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final remainingTotal = _orders.fold<double>(
-      0,
-      (total, order) => total + (order.remainingGrams ?? 0),
-    );
-    final redUrgencies =
-        _orders.where((order) => order.urgency == 'Rojo').length;
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final pagePadding = constraints.maxWidth < 600 ? 14.0 : 24.0;
-        final pageWidth =
-            constraints.maxWidth > 1500 ? 1500.0 : constraints.maxWidth;
+        final pageWidth = constraints.maxWidth;
         if (widget.embedded) {
           return _buildEmbeddedContent(context, pageWidth);
         }
@@ -481,68 +473,60 @@ class PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
           ),
           body: SingleChildScrollView(
             padding: EdgeInsets.all(pagePadding),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1500),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildHeader(theme, isDark),
-                    const SizedBox(height: 18),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: SizedBox(
-                        height: 38,
-                        child: ElevatedButton.icon(
-                          onPressed: () =>
-                              setState(() => _expanded = !_expanded),
-                          icon: Icon(
-                            _expanded
-                                ? Icons.close_rounded
-                                : Icons.add_rounded,
-                            size: 18,
-                          ),
-                          label: Text(
-                            _expanded ? 'Ocultar pedidos' : 'Nuevo pedido',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colors.primary,
-                            foregroundColor: colors.onPrimary,
-                            elevation: 2,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 0),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeader(theme, isDark),
+                const SizedBox(height: 18),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: SizedBox(
+                    height: 38,
+                    child: ElevatedButton.icon(
+                      onPressed: () => setState(() => _expanded = !_expanded),
+                      icon: Icon(
+                        _expanded ? Icons.close_rounded : Icons.add_rounded,
+                        size: 18,
+                      ),
+                      label: Text(
+                        _expanded ? 'Ocultar pedidos' : 'Nuevo pedido',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.primary,
+                        foregroundColor: colors.onPrimary,
+                        elevation: 2,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
-                    if (_expanded) ...[
-                      const SizedBox(height: 16),
-                      if (_loading)
-                        const LinearProgressIndicator(minHeight: 3)
-                      else ...[
-                        _buildForm(context, pageWidth),
-                        const SizedBox(height: 20),
-                        _buildOrdersTable(context),
-                      ],
-                    ],
-                    if (_storageError != null) ...[
-                      const SizedBox(height: 12),
-                      _buildStorageWarning(context),
-                    ],
-                    if (_saving) ...[
-                      const SizedBox(height: 10),
-                      const LinearProgressIndicator(minHeight: 2),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
+                if (_expanded) ...[
+                  const SizedBox(height: 16),
+                  if (_loading)
+                    const LinearProgressIndicator(minHeight: 3)
+                  else ...[
+                    _buildForm(context, pageWidth),
+                    const SizedBox(height: 20),
+                    _buildOrdersTable(context),
+                  ],
+                ],
+                if (_storageError != null) ...[
+                  const SizedBox(height: 12),
+                  _buildStorageWarning(context),
+                ],
+                if (_saving) ...[
+                  const SizedBox(height: 10),
+                  const LinearProgressIndicator(minHeight: 2),
+                ],
+              ],
             ),
           ),
         );
@@ -580,8 +564,8 @@ class PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
                   backgroundColor: colors.primary,
                   foregroundColor: colors.onPrimary,
                   elevation: 1,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 0),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -615,8 +599,8 @@ class PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Theme.of(context).colorScheme.onSurface,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -698,102 +682,6 @@ class PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
                 Text(
                   'Organiza las compras y prioridades del laboratorio',
                   style: TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryCards(
-    BuildContext context,
-    double remainingGrams,
-    int redUrgencies,
-  ) {
-    final colors = Theme.of(context).colorScheme;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth < 560
-            ? constraints.maxWidth
-            : (constraints.maxWidth - 24) / 3;
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            _summaryCard(
-              context,
-              width: width,
-              title: 'TOTAL DE PEDIDOS',
-              value: '${_orders.length}',
-              icon: Icons.receipt_long_outlined,
-              accent: colors.primary,
-            ),
-            _summaryCard(
-              context,
-              width: width,
-              title: 'PESO RESTANTE',
-              value: _formatWeight(remainingGrams),
-              icon: Icons.scale_outlined,
-              accent: colors.secondary,
-            ),
-            _summaryCard(
-              context,
-              width: width,
-              title: 'URGENCIAS ROJAS',
-              value: '$redUrgencies',
-              icon: Icons.warning_amber_rounded,
-              accent: _urgencyColor(context, 'Rojo'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _summaryCard(
-    BuildContext context, {
-    required double width,
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color accent,
-  }) {
-    final theme = Theme.of(context);
-    return Container(
-      width: width,
-      padding: const EdgeInsets.all(16),
-      decoration: _cardDecoration(theme),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: accent, size: 21),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    letterSpacing: 0.6,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  value,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
                 ),
               ],
             ),
@@ -1459,9 +1347,6 @@ class PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
 
   Widget _urgencyDropdown(BuildContext context, _OrderDraft draft) {
     final theme = Theme.of(context);
-    final selectedColor = draft.selectedUrgency == null
-        ? null
-        : _urgencyColor(context, draft.selectedUrgency!);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1586,89 +1471,100 @@ class PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
               ),
             )
           else
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columnSpacing: 22,
-                headingRowColor: WidgetStatePropertyAll(
-                  theme.colorScheme.surfaceContainerHighest,
-                ),
-                columns: const [
-                  DataColumn(label: Text('Página')),
-                  DataColumn(label: Text('Material')),
-                  DataColumn(label: Text('Color')),
-                  DataColumn(label: Text('Urgencia')),
-                  DataColumn(label: Text('Consumible')),
-                  DataColumn(label: Text('Peso restante')),
-                  DataColumn(label: Text('Costo')),
-                  DataColumn(label: Text('')),
-                ],
-                rows: _orders.map((order) {
-                  return DataRow(
-                    cells: [
-                      DataCell(
-                        Tooltip(
-                          message: order.link,
-                          child: TextButton.icon(
-                            onPressed: () => _openLink(order),
-                            icon: const Icon(
-                              Icons.open_in_new_rounded,
-                              size: 15,
-                            ),
-                            label: Text(
-                              _siteName(order.link),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minWidth: constraints.maxWidth,
+                    ),
+                    child: DataTable(
+                      columnSpacing: 22,
+                      headingRowColor: WidgetStatePropertyAll(
+                        theme.colorScheme.surfaceContainerHighest,
                       ),
-                      DataCell(
-                        Chip(
-                          label: Text(order.material),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                      DataCell(
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 15,
-                              height: 15,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: _filamentColor(order.color),
-                                border: Border.all(
-                                  color: theme.colorScheme.outlineVariant,
+                      columns: const [
+                        DataColumn(label: Text('Página')),
+                        DataColumn(label: Text('Material')),
+                        DataColumn(label: Text('Color')),
+                        DataColumn(label: Text('Urgencia')),
+                        DataColumn(label: Text('Consumible')),
+                        DataColumn(label: Text('Peso restante')),
+                        DataColumn(label: Text('Costo')),
+                        DataColumn(label: Text('')),
+                      ],
+                      rows: _orders.map((order) {
+                        return DataRow(
+                          cells: [
+                            DataCell(
+                              Tooltip(
+                                message: order.link,
+                                child: TextButton.icon(
+                                  onPressed: () => _openLink(order),
+                                  icon: const Icon(
+                                    Icons.open_in_new_rounded,
+                                    size: 15,
+                                  ),
+                                  label: Text(
+                                    _siteName(order.link),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Text(order.color),
+                            DataCell(
+                              Chip(
+                                label: Text(order.material),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                            DataCell(
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 15,
+                                    height: 15,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: _filamentColor(order.color),
+                                      border: Border.all(
+                                        color: theme.colorScheme.outlineVariant,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(order.color),
+                                ],
+                              ),
+                            ),
+                            DataCell(_urgencyChip(context, order)),
+                            DataCell(Text(
+                              order.consumables.isEmpty
+                                  ? '—'
+                                  : order.consumables.join(', '),
+                            )),
+                            DataCell(_remainingCell(context, order)),
+                            DataCell(
+                                Text('\$${order.cost.toStringAsFixed(2)}')),
+                            DataCell(
+                              IconButton(
+                                tooltip: 'Quitar pedido',
+                                onPressed:
+                                    _saving ? null : () => _removeOrder(order),
+                                icon: const Icon(Icons.delete_outline_rounded),
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
                           ],
-                        ),
-                      ),
-                      DataCell(_urgencyChip(context, order)),
-                      DataCell(Text(
-                        order.consumables.isEmpty
-                            ? '—'
-                            : order.consumables.join(', '),
-                      )),
-                      DataCell(_remainingCell(context, order)),
-                      DataCell(Text('\$${order.cost.toStringAsFixed(2)}')),
-                      DataCell(
-                        IconButton(
-                          tooltip: 'Quitar pedido',
-                          onPressed: _saving ? null : () => _removeOrder(order),
-                          icon: const Icon(Icons.delete_outline_rounded),
-                          color: theme.colorScheme.error,
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                );
+              },
             ),
         ],
       ),

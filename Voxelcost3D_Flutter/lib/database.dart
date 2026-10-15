@@ -61,7 +61,7 @@ class AppDatabase {
 
   static Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
+    final saved = await prefs.setString(
       _storageKey,
       jsonEncode({
         'records': _records.map((item) => item.toMap()).toList(),
@@ -70,6 +70,9 @@ class AppDatabase {
         'colors': _colors.map((item) => item.toMap()).toList(),
       }),
     );
+    if (!saved) {
+      throw StateError('El almacenamiento rechazó los cambios.');
+    }
   }
 
   Future<List<PrintRecord>> records() async {
@@ -94,12 +97,34 @@ class AppDatabase {
     return 1;
   }
 
-  Future<int> deleteRecord(PrintRecord record) async {
+  Future<int> deleteRecord(
+    PrintRecord record, {
+    List<InventoryItem> inventoryUpdates = const [],
+  }) async {
     await _ensureReady();
-    final count = _records.where((item) => item.id == record.id).length;
-    _records.removeWhere((item) => item.id == record.id);
-    await _save();
-    return count;
+    final recordIndex = _records.indexWhere((item) => item.id == record.id);
+    if (recordIndex < 0) return 0;
+
+    final removedRecord = _records.removeAt(recordIndex);
+    final previousInventory = <int, InventoryItem>{};
+    for (final updatedItem in inventoryUpdates) {
+      final index =
+          _inventory.indexWhere((item) => item.id == updatedItem.id);
+      if (index < 0) continue;
+      previousInventory[index] = _inventory[index];
+      _inventory[index] = updatedItem;
+    }
+
+    try {
+      await _save();
+    } catch (_) {
+      _records.insert(recordIndex, removedRecord);
+      for (final entry in previousInventory.entries) {
+        _inventory[entry.key] = entry.value;
+      }
+      rethrow;
+    }
+    return 1;
   }
 
   Future<List<InventoryItem>> inventory() async {
