@@ -289,7 +289,7 @@ void main() {
   testWidgets(
       'El pedido conserva el inventario y despliega el formulario nuevo',
       (WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1200, 1600);
+    tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -348,6 +348,14 @@ void main() {
         findsOneWidget);
     expect(find.text('Material'), findsOneWidget);
     expect(find.text('Color del filamento'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Material').first).dy,
+      tester.getTopLeft(find.text('Color del filamento').first).dy,
+    );
+    expect(
+      tester.getTopLeft(find.text('Material').first).dy,
+      tester.getTopLeft(find.text('Peso del carrete').first).dy,
+    );
 
     final firstOrderLink = find.byWidgetPredicate(
       (widget) =>

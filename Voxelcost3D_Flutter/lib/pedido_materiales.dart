@@ -793,28 +793,49 @@ class PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
         ),
         const SizedBox(height: 20),
         _formSectionTitle(context, 'Material y color'),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            field(_dropdown(
-              context,
-              key: ValueKey('order_material_$draftIndex'),
-              label: 'Material',
-              value: draft.selectedMaterial,
-              options: [..._materials, _otro],
-              hint: 'Elegir material',
-              onChanged: (value) =>
-                  setState(() => draft.selectedMaterial = value),
-            )),
-            field(_filamentColorDropdown(context, draft)),
-            field(_weightInput(
-              context,
-              controller: draft.spoolWeightController,
-              label: 'Peso del carrete',
-              hint: '1kg, un kilo y medio, 500 g',
-            )),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final materialColumns = constraints.maxWidth >= 660
+                ? 3
+                : constraints.maxWidth >= 620
+                    ? 2
+                    : 1;
+            final materialFieldWidth =
+                (constraints.maxWidth - 12 * (materialColumns - 1)) /
+                    materialColumns;
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                SizedBox(
+                  width: materialFieldWidth,
+                  child: _dropdown(
+                    context,
+                    key: ValueKey('order_material_$draftIndex'),
+                    label: 'Material',
+                    value: draft.selectedMaterial,
+                    options: [..._materials, _otro],
+                    hint: 'Elegir material',
+                    onChanged: (value) =>
+                        setState(() => draft.selectedMaterial = value),
+                  ),
+                ),
+                SizedBox(
+                  width: materialFieldWidth,
+                  child: _filamentColorDropdown(context, draft),
+                ),
+                SizedBox(
+                  width: materialFieldWidth,
+                  child: _weightInput(
+                    context,
+                    controller: draft.spoolWeightController,
+                    label: 'Peso del carrete',
+                    hint: '1kg, un kilo y medio, 500 g',
+                  ),
+                ),
+              ],
+            );
+          },
         ),
         if (draft.selectedMaterial == _otro ||
             draft.selectedColor == _otro) ...[
