@@ -1347,6 +1347,12 @@ class PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
 
   Widget _urgencyDropdown(BuildContext context, _OrderDraft draft) {
     final theme = Theme.of(context);
+    final selectedColor = draft.selectedUrgency == null
+        ? null
+        : _urgencyColor(context, draft.selectedUrgency!);
+    final selectedForeground = draft.selectedUrgency == null
+        ? theme.colorScheme.onSurface
+        : Colors.white;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1374,7 +1380,12 @@ class PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
                         color: _urgencyColor(context, level),
                       ),
                       const SizedBox(width: 8),
-                      Text(level),
+                      Text(
+                        level,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         level == 'Rojo'
@@ -1397,15 +1408,16 @@ class PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
               .map(
                 (level) => Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.circle,
                       size: 11,
-                      color: _urgencyColor(context, level),
+                      color: Colors.white,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       level,
                       style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.white,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1416,9 +1428,10 @@ class PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
           onChanged: (value) => setState(() => draft.selectedUrgency = value),
           decoration: InputDecoration(
             filled: true,
-            fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
-              alpha: theme.brightness == Brightness.dark ? 0.48 : 0.55,
-            ),
+            fillColor: selectedColor ??
+                theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: theme.brightness == Brightness.dark ? 0.48 : 0.55,
+                ),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             border: OutlineInputBorder(
@@ -1435,7 +1448,9 @@ class PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
             ),
           ),
           dropdownColor: theme.colorScheme.surface,
+          iconEnabledColor: selectedForeground,
           style: theme.textTheme.bodyMedium?.copyWith(
+            color: selectedForeground,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -1658,11 +1673,11 @@ class PedidoMaterialesWidgetState extends State<PedidoMaterialesWidget> {
   Color _urgencyColor(BuildContext context, String urgency) {
     switch (urgency) {
       case 'Rojo':
-        return const Color(0xFFE5484D);
+        return const Color(0xFFDC2626);
       case 'Amarillo':
-        return const Color(0xFFE3A008);
+        return const Color(0xFFFACC15);
       case 'Verde':
-        return const Color(0xFF20B867);
+        return const Color(0xFF15803D);
       default:
         return Theme.of(context).colorScheme.primary;
     }

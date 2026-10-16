@@ -519,10 +519,57 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(urgencyDropdown);
     await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.text('Rojo').last).style?.color,
+      Theme.of(tester.element(urgencyDropdown)).colorScheme.onSurface,
+    );
     await tester.tap(find.text('Rojo').last);
     await tester.pump();
     expect(find.text('Tipo de urgencia'), findsOneWidget);
     expect(find.text('Urgencia en texto'), findsOneWidget);
+    expect(
+      tester
+          .widget<DropdownButtonFormField<String>>(urgencyDropdown)
+          .decoration
+          .fillColor,
+      const Color(0xFFDC2626),
+    );
+
+    await tester.tap(urgencyDropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Amarillo').last);
+    await tester.pump();
+    expect(
+      tester
+          .widget<DropdownButtonFormField<String>>(urgencyDropdown)
+          .decoration
+          .fillColor,
+      const Color(0xFFFACC15),
+    );
+    expect(
+      tester
+          .widget<Text>(
+            find.descendant(
+              of: urgencyDropdown,
+              matching: find.text('Amarillo'),
+            ),
+          )
+          .style
+          ?.color,
+      Colors.white,
+    );
+
+    await tester.tap(urgencyDropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Verde').last);
+    await tester.pump();
+    expect(
+      tester
+          .widget<DropdownButtonFormField<String>>(urgencyDropdown)
+          .decoration
+          .fillColor,
+      const Color(0xFF15803D),
+    );
 
     final addAnotherOrder = find.byKey(const ValueKey('add_order_draft_0'));
     await tester.ensureVisible(addAnotherOrder);
